@@ -46,3 +46,10 @@ label {
 button:hover {
   background-color: #004d40;
 }
+
+.form-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  gap: 10px;
+}
