@@ -1,67 +1,138 @@
-// script.js
-
 const supplements = [];
 
-// Load saved supplements on page load
 window.addEventListener('load', () => {
   const saved = localStorage.getItem('supplements');
   if (saved) {
     supplements.push(...JSON.parse(saved));
     renderDashboard();
+    renderCalendar();
+    renderSupplementList();
   }
 });
 
-// Add a new supplement
-function addSupplement(name, time) {
-  const supplement = { name, time };
+document.getElementById('cycleCheckbox').addEventListener('change', function () {
+  document.getElementById('cycleDetails').style.display = this.checked ? 'block' : 'none';
+});
+
+document.getElementById('supplementForm').addEventListener('submit', function (e) {
+  e.preventDefault();
+
+  const name = document.getElementById('nameInput').value.trim();
+  const dosage = document.getElementById('dosageInput').value.trim();
+  const time = document.getElementById('timeInput').value;
+  const isCycled = document.getElementById('cycleCheckbox').checked;
+  const onDays = isCycled ? parseInt(document.getElementById('onDaysInput').value) : null;
+  const offDays = isCycled ? parseInt(document.getElementById('offDaysInput').value) : null;
+
+  const color = getRandomColor();
+
+  const supplement = {
+    name,
+    dosage,
+    time,
+    isCycled,
+    cyclePattern: isCycled ? { onDays, offDays } : null,
+    startDate: new Date().toISOString().split('T')[0],
+    color
+  };
+
   supplements.push(supplement);
   localStorage.setItem('supplements', JSON.stringify(supplements));
   renderDashboard();
+  renderCalendar();
+  renderSupplementList();
+  this.reset();
+  document.getElementById('cycleDetails').style.display = 'none';
+});
+
+function getRandomColor() {
+  const colors = ['#FF6347', '#4682B4', '#32CD32', '#FFD700', '#BA55D3', '#00CED1'];
+  return colors[Math.floor(Math.random() * colors.length)];
 }
 
-// Render the dashboard
+function isSupplementActive(supplement) {
+  if (!supplement.isCycled) return true;
+
+  const start = new Date(supplement.startDate);
+  const today = new Date();
+  const daysSinceStart = Math.floor((today - start) / (1000 * 60 * 60 * 24));
+  const cycleLength = supplement.cyclePattern.onDays + supplement.cyclePattern.offDays;
+  const dayInCycle = daysSinceStart % cycleLength;
+
+  return dayInCycle < supplement.cyclePattern.onDays;
+}
+
+function getNextCycleStart(supplement) {
+  const start = new Date(supplement.startDate);
+  const today = new Date();
+  const daysSinceStart = Math.floor((today - start) / (1000 * 60 * 60 * 24));
+  const cycleLength = supplement.cyclePattern.onDays + supplement.cyclePattern.offDays;
+  const dayInCycle = daysSinceStart % cycleLength;
+  const daysUntilNextCycle = cycleLength - dayInCycle;
+  const nextStartDate = new Date(today);
+  nextStartDate.setDate(today.getDate() + daysUntilNextCycle);
+  return nextStartDate.toDateString();
+}
+
 function renderDashboard() {
   const dashboard = document.getElementById('dashboard');
   dashboard.innerHTML = '';
 
-  supplements.forEach((supplement, index) => {
+  supplements.forEach((supp, index) => {
     const item = document.createElement('div');
-    item.innerHTML = `
-      <strong>${supplement.name}</strong> (${supplement.time})
-      <button onclick="editSupplement(${index})">✏️</button>
-      <button onclick="deleteSupplement(${index})">🗑️</button>
-    `;
+
+    if (isSupplementActive(supp)) {
+      item.innerHTML = `
+        <span>${supp.name} (${supp.dosage}) - ${supp.time}</span>
+        <span>
+          <button onclick="editSupplement(${index})">✏️</button>
+          <button onclick="deleteSupplement(${index})">🗑️</button>
+        </span>
+      `;
+    } else {
+      item.innerHTML = `
+        <span>${supp.name} is on break. Will restart on ${getNextCycleStart(supp)}</span>
+        <span>
+          <button onclick="editSupplement(${index})">✏️</button>
+          <button onclick="deleteSupplement(${index})">🗑️</button>
+        </span>
+      `;
+      item.style.color = 'orange';
+    }
+
     dashboard.appendChild(item);
   });
 }
 
-// Delete a supplement
 function deleteSupplement(index) {
   supplements.splice(index, 1);
   localStorage.setItem('supplements', JSON.stringify(supplements));
   renderDashboard();
+  renderCalendar();
+  renderSupplementList();
 }
 
-// Edit a supplement
 function editSupplement(index) {
   const current = supplements[index];
   const newName = prompt("Update supplement name:", current.name);
+  const newDosage = prompt("Update dosage:", current.dosage);
   const newTime = prompt("Update time of day:", current.time);
 
-  if (newName && newTime) {
-    supplements[index] = { name: newName, time: newTime };
+  if (newName && newDosage && newTime) {
+    supplements[index].name = newName;
+    supplements[index].dosage = newDosage;
+    supplements[index].time = newTime;
     localStorage.setItem('supplements', JSON.stringify(supplements));
     renderDashboard();
+    renderCalendar();
+    renderSupplementList();
   }
 }
 
-// Hook up the form
-document.getElementById('supplementForm').addEventListener('submit', (e) => {
-  e.preventDefault();
-  const name = document.getElementById('nameInput').value.trim();
-  const time = document.getElementById('timeInput').value.trim();
-  if (name && time) {
-    addSupplement(name, time);
-    document.getElementById('supplementForm').reset();
-  }
+document.getElementById('viewCalendarBtn').addEventListener('click', () => {
+  renderCalendar();
+  renderSupplementList();
 });
+
+function renderCalendar(month = new Date().getMonth(), year = new Date().getFullYear()) {
+ 
