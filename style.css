@@ -98,3 +98,8 @@ label {
   width: 16px;
   height: 16px;
 }
+label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
