@@ -1,4 +1,17 @@
 const supplements = [];
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem('supplements');
+  if (saved) {
+    supplements.push(...JSON.parse(saved));
+    renderDashboard();
+  const item = document.createElement('div');
+item.innerHTML = `
+  <strong>${supplement.name}</strong> (${supplement.time})
+  <button onclick="deleteSupplement(${index})">🗑️</button>
+  <button onclick="editSupplement(${index})">✏️</button>
+`;
+  }
+});
 
 document.getElementById('cycled').addEventListener('change', function () {
   document.getElementById('cycle-details').style.display = this.checked ? 'block' : 'none';
@@ -24,6 +37,7 @@ document.getElementById('supplement-form').addEventListener('submit', function (
   };
 
   supplements.push(supplement);
+  localStorage.setItem('supplements', JSON.stringify(supplements));
   renderDashboard();
   this.reset();
   document.getElementById('cycle-details').style.display = 'none';
@@ -84,5 +98,21 @@ document.getElementById('calendar-btn').addEventListener('click', () => {
       entry.textContent = `${supp.name}: Taken daily`;
     }
     calendar.appendChild(entry);
+    function deleteSupplement(index) {
+  supplements.splice(index, 1);
+  localStorage.setItem('supplements', JSON.stringify(supplements));
+  renderDashboard();
+}
+    function editSupplement(index) {
+  const current = supplements[index];
+  const newName = prompt("Update supplement name:", current.name);
+  const newTime = prompt("Update time of day:", current.time);
+
+  if (newName && newTime) {
+    supplements[index] = { name: newName, time: newTime };
+    localStorage.setItem('supplements', JSON.stringify(supplements));
+    renderDashboard();
+  }
+}
   });
 });
