@@ -70,3 +70,19 @@ function renderDashboard() {
     list.appendChild(item);
   });
 }
+document.getElementById('calendar-btn').addEventListener('click', () => {
+  const calendar = document.getElementById('calendar-view');
+  calendar.innerHTML = ''; // Clear previous
+  calendar.style.display = 'block';
+
+  supplements.forEach(supp => {
+    const entry = document.createElement('p');
+    if (supp.isCycled) {
+      const nextStart = getNextCycleStart(supp);
+      entry.textContent = `${supp.name}: ${supp.cyclePattern.onDays} days on / ${supp.cyclePattern.offDays} off. Next cycle starts ${nextStart}`;
+    } else {
+      entry.textContent = `${supp.name}: Taken daily`;
+    }
+    calendar.appendChild(entry);
+  });
+});
