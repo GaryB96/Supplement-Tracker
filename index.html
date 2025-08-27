@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Supplement Tracker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Supplement Tracker</h1>
+
+  <form id="supplement-form">
+    <input type="text" id="name" placeholder="Supplement name" required>
+    <input type="text" id="dosage" placeholder="Dosage (e.g., 500mg)" required>
+    <select id="time">
+      <option value="Morning">Morning</option>
+      <option value="Afternoon">Afternoon</option>
+      <option value="Evening">Evening</option>
+    </select>
+    <label>
+      <input type="checkbox" id="cycled"> On a cycle?
+    </label>
+    <div id="cycle-details" style="display:none;">
+      <input type="number" id="on-days" placeholder="Days on">
+      <input type="number" id="off-days" placeholder="Days off">
+    </div>
+    <button type="submit">Add Supplement</button>
+  </form>
+
+  <h2>Today's Supplements</h2>
+  <ul id="supplement-list"></ul>
+
+  <script src="script.js"></script>
+</body>
+</html>
