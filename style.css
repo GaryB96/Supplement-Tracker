@@ -40,9 +40,10 @@ button:hover {
 }
 
 label {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
+  margin-top: 10px;
 }
 
 #cycleDetails {
@@ -97,9 +98,4 @@ label {
 .color-box {
   width: 16px;
   height: 16px;
-}
-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
 }
