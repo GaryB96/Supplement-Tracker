@@ -1,48 +1,41 @@
 <!DOCTYPE html>
-<div class="form-row">
-  <label for="nameInput">Name:</label>
-  <input id="nameInput" />
-</div>
-
-<div class="form-row">
-  <label for="cycleCheckbox">
-    <input type="checkbox" id="cycleCheckbox" />
-    On a cycle
-  </label>
-</div>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Supplement Tracker</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <h1>Supplement Tracker</h1>
 
-  <form id="supplement-form">
-    <input type="text" id="name" placeholder="Supplement name" required>
-    <input type="text" id="dosage" placeholder="Dosage (e.g., 500mg)" required>
-    <select id="time">
+  <form id="supplementForm">
+    <input id="nameInput" placeholder="Supplement name" required />
+    <input id="dosageInput" placeholder="Dosage (e.g., 500mg)" required />
+    <select id="timeInput">
       <option value="Morning">Morning</option>
       <option value="Afternoon">Afternoon</option>
       <option value="Evening">Evening</option>
     </select>
-<label for="cycleCheckbox">
-  <input type="checkbox" id="cycleCheckbox" />
-  On a cycle
-</label>
-    <div id="cycle-details" style="display:none;">
-      <input type="number" id="on-days" placeholder="Days on">
-      <input type="number" id="off-days" placeholder="Days off">
+    <label>
+      <input type="checkbox" id="cycleCheckbox" />
+      On a cycle
+    </label>
+    <div id="cycleDetails" style="display:none;">
+      <input type="number" id="onDaysInput" placeholder="Days on" />
+      <input type="number" id="offDaysInput" placeholder="Days off" />
     </div>
     <button type="submit">Add Supplement</button>
   </form>
 
   <h2>Today's Supplements</h2>
-  <ul id="supplement-list"></ul>
+  <div id="dashboard"></div>
+
+  <button id="viewCalendarBtn">View Cycle Calendar</button>
+  <div id="calendarContainer">
+    <div id="calendar"></div>
+    <div id="supplementList"></div>
+  </div>
 
   <script src="script.js"></script>
-  <button id="calendar-btn">View Cycle Calendar</button>
-<div id="calendar-view" style="display:none;"></div>
 </body>
 </html>
