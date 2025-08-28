@@ -8,6 +8,15 @@
 <body>
   <h1>Supplement Tracker</h1>
 
+  <form id="supplementForm">
+    <input id="nameInput" placeholder="Supplement name" required />
+    <input id="dosageInput" placeholder="Dosage (e.g., 500mg)" required />
+    <select id="timeInput">
+      <option value="Morning">Morning</option>
+      <option value="Afternoon">Afternoon</option>
+      <option value="Evening">Evening</option>
+    </select>
+
     <label for="cycleCheckbox">
       <input type="checkbox" id="cycleCheckbox" />
       <span>On a cycle</span>
@@ -23,8 +32,7 @@
 
   <h2>Today's Supplements</h2>
   <div id="dashboard"></div>
-
-  <button id="viewCalendarBtn">View Cycle Calendar</button>
+  
   <div id="supplementSummaryContainer" class="summary-container"></div>
   <style>
   .summary-container {
