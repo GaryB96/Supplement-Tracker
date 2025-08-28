@@ -4,35 +4,37 @@ document.addEventListener("DOMContentLoaded", () => {
   const cycleCheckbox = document.getElementById("cycleCheckbox");
   const cycleDetails = document.getElementById("cycleDetails");
   const supplementSummaryContainer = document.getElementById("supplementSummaryContainer");
+  let supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
   renderSupplements();
-const supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
-renderSummary(supplements);
+  renderSummary(supplements);
+  renderCalendar();
   cycleCheckbox.addEventListener("change", () => {
   cycleDetails.classList.toggle("hidden", !cycleCheckbox.checked);
   });
-  renderSupplements();
-const supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
-renderSummary(supplements);
-  renderCalendar();
-  form.addEventListener("submit", (e) => {
+    let supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
+    renderSupplements();
+    renderSummary(supplements);
+    renderCalendar();
+    form.addEventListener("submit", (e) => {
     e.preventDefault();
-
     const name = document.getElementById("nameInput").value;
     const dosage = document.getElementById("dosageInput").value;
     const time = document.getElementById("timeInput").value;
     const onCycle = cycleCheckbox.checked;
     const onDays = parseInt(document.getElementById("onDaysInput").value) || 0;
     const offDays = parseInt(document.getElementById("offDaysInput").value) || 0;
-
     const supplement = { name, dosage, time, onCycle, onDays, offDays };
     saveSupplement(supplement);
+    // ✅ Refresh everything after saving
+  const supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
   renderSupplements();
-const supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
-renderSummary(supplements);
+  renderSummary(supplements);
   renderCalendar();
-    form.reset();
-    cycleDetails.classList.add("hidden");
-  });
+
+  form.reset();
+  cycleDetails.classList.add("hidden");
+});
+
 
   function saveSupplement(supplement) {
     const supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
