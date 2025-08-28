@@ -8,6 +8,7 @@ window.addEventListener('load', () => {
     renderCalendar();
     renderSupplementList();
     renderSupplementSummaries();
+    console.log("Rendering supplement summaries...");
   }
 });
 
@@ -176,4 +177,3 @@ document.getElementById('viewCalendarBtn').addEventListener('click', () => {
 });
 
 function renderCalendar
-console.log("Rendering supplement summaries...");
