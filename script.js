@@ -99,6 +99,8 @@ window.editSupplement = function(index) {
   }
 
 function renderCalendar() {
+  const today = new Date();
+  const monthName = today.toLocaleString("default", { month: "long" });
   const calendarContainer = document.getElementById("calendarContainer");
   const calendar = document.getElementById("calendar");
   calendar.innerHTML = "";
@@ -108,7 +110,6 @@ function renderCalendar() {
   const oldWeekdayRow = calendarContainer.querySelector(".weekday-row");
   if (oldMonthHeader) oldMonthHeader.remove();
   if (oldWeekdayRow) oldWeekdayRow.remove();
-
   
   const supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
   const year = today.getFullYear();
