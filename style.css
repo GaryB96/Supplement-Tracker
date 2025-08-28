@@ -100,3 +100,24 @@ button:hover {
   opacity: 0.3;
   border-radius: 4px;
 }
+/* Cycle color strips */
+.cycle-strip {
+  border-left: 6px solid #4CAF50; /* Default green */
+  padding-left: 10px;
+}
+
+.cycle-color-1 {
+  border-left-color: #2196F3; /* Blue */
+}
+
+.cycle-color-2 {
+  border-left-color: #FF9800; /* Orange */
+}
+
+.cycle-color-3 {
+  border-left-color: #9C27B0; /* Purple */
+}
+
+.cycle-color-4 {
+  border-left-color: #E91E63; /* Pink */
+}
