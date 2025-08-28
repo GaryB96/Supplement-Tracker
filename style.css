@@ -1,34 +1,71 @@
-.edit-btn {
-  background: #4caf50;
-  color: white;
-  border: none;
-  padding: 4px 8px;
-  margin-right: 4px;
-  cursor: pointer;
-  border-radius: 3px;
-}
-.delete-btn {
-  background: #f44336;
-  color: white;
-  border: none;
-  padding: 4px 8px;
-  cursor: pointer;
-  border-radius: 3px;
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+  background-color: #f9f9f9;
+  color: #333;
 }
 
-/* Highlight stacking for calendar supplement cycles */
-.highlights-container {
-  position: absolute;
-  bottom: 5px;
-  left: 5px;
-  right: 5px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  z-index: 1;
+form {
+  margin-bottom: 20px;
 }
-.highlight-bar {
-  height: 8px;
-  border-radius: 2px;
-  opacity: 0.5;
+
+.hidden {
+  display: none;
+}
+
+.supplement-box {
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin-bottom: 10px;
+  background-color: #fff;
+  border-radius: 5px;
+}
+
+.cycle-strip {
+  border-left: 8px solid transparent;
+}
+
+.cycle-color-1 { border-left-color: #2196F3; }
+.cycle-color-2 { border-left-color: #FF9800; }
+.cycle-color-3 { border-left-color: #9C27B0; }
+.cycle-color-4 { border-left-color: #E91E63; }
+
+.actions {
+  margin-top: 10px;
+}
+
+#calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+  margin-top: 20px;
+}
+
+.day {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  min-height: 60px;
+  padding: 5px;
+  position: relative;
+  border-radius: 4px;
+}
+
+.day-number {
+  font-weight: bold;
+}
+
+.month-header {
+  font-size: 1.5em;
+  margin-bottom: 10px;
+}
+
+.weekday-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 5px;
+}
+
+.weekday-cell {
+  font-weight: bold;
+  text-align: center;
 }
