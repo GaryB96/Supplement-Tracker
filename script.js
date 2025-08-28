@@ -6,7 +6,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const supplementSummaryContainer = document.getElementById("supplementSummaryContainer");
 
   cycleCheckbox.addEventListener("change", () => {
-    cycleDetails.classList.toggle("hidden", !cycleCheckbox.checked);
+  cycleDetails.classList.toggle("hidden", !cycleCheckbox.checked);\
+  renderSupplements();
+  renderCalendar();
   });
 
   form.addEventListener("submit", (e) => {
@@ -21,8 +23,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const supplement = { name, dosage, time, onCycle, onDays, offDays };
     saveSupplement(supplement);
-    renderSupplements();
-    renderCalendar();
     form.reset();
     cycleDetails.classList.add("hidden");
   });
