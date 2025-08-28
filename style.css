@@ -99,3 +99,25 @@ label {
   width: 16px;
   height: 16px;
 }
+
+.summary-container {
+  margin-top: 20px;
+}
+
+.supplement-box {
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin-bottom: 10px;
+  background-color: #f9f9f9;
+  position: relative;
+}
+
+.supplement-box .actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.supplement-box .actions button {
+  margin-left: 5px;
+}
