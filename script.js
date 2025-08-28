@@ -7,6 +7,7 @@ window.addEventListener('load', () => {
     renderDashboard();
     renderCalendar();
     renderSupplementList();
+    renderSupplementSummaries();
   }
 });
 
@@ -41,6 +42,7 @@ document.getElementById('supplementForm').addEventListener('submit', function (e
   renderDashboard();
   renderCalendar();
   renderSupplementList();
+  renderSupplementSummaries();
   this.reset();
   document.getElementById('cycleDetails').style.display = 'none';
 });
@@ -104,12 +106,50 @@ function renderDashboard() {
   });
 }
 
+function renderSupplementSummaries() {
+  const container = document.getElementById('supplementSummaryContainer');
+  container.innerHTML = '';
+
+  supplements.forEach((supp, index) => {
+    const box = document.createElement('div');
+    box.className = 'supplement-box';
+
+    const dateAdded = new Date(supp.startDate).toDateString();
+    let cycleInfo = '';
+
+    if (supp.isCycled) {
+      const nextDate = getNextCycleStart(supp);
+      const active = isSupplementActive(supp);
+      cycleInfo = `Cycle: ${supp.cyclePattern.onDays} on / ${supp.cyclePattern.offDays} off<br>
+        Currently: ${active ? 'ON' : 'OFF'}<br>
+        Next ${active ? 'OFF' : 'ON'} starts: ${nextDate}`;
+    } else {
+      cycleInfo = 'No cycle';
+    }
+
+    box.innerHTML = `
+      <strong>${supp.name}</strong><br>
+      Dosage: ${supp.dosage}<br>
+      Time: ${supp.time}<br>
+      Added: ${dateAdded}<br>
+      ${cycleInfo}
+      <div class="actions">
+        <button onclick="editSupplement(${index})">✏️ Edit</button>
+        <button onclick="deleteSupplement(${index})">🗑️ Delete</button>
+      </div>
+    `;
+
+    container.appendChild(box);
+  });
+}
+
 function deleteSupplement(index) {
   supplements.splice(index, 1);
   localStorage.setItem('supplements', JSON.stringify(supplements));
   renderDashboard();
   renderCalendar();
   renderSupplementList();
+  renderSupplementSummaries();
 }
 
 function editSupplement(index) {
@@ -126,6 +166,7 @@ function editSupplement(index) {
     renderDashboard();
     renderCalendar();
     renderSupplementList();
+    renderSupplementSummaries();
   }
 }
 
