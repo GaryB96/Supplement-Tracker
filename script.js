@@ -37,30 +37,28 @@ function renderSupplements() {
   supplementSummaryContainer.innerHTML = "";
   const supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
 
-  // Group supplements by date
+  // Group supplements by month/day
   const grouped = {};
   supplements.forEach((supplement) => {
-    const dateKey = `${supplement.month}-${supplement.day}`;
-    if (!grouped[dateKey]) {
-      grouped[dateKey] = [];
+    const key = `${supplement.month}-${supplement.day}`;
+    if (!grouped[key]) {
+      grouped[key] = [];
     }
-    grouped[dateKey].push(supplement);
+    grouped[key].push(supplement);
   });
 
-  // Render each group with a single header
-  Object.keys(grouped).forEach((dateKey) => {
-    const [month, day] = dateKey.split("-");
-    const headerId = `header-${month}-${day}`;
+  // Render each group
+  Object.keys(grouped).forEach((key) => {
+    const [month, day] = key.split("-");
 
-    // Create header if not already present
+    // Create header once per group
     const header = document.createElement("div");
-    header.id = headerId;
     header.className = "calendar-header";
     header.textContent = `${month} ${day}`;
     supplementSummaryContainer.appendChild(header);
 
     // Render supplements under this header
-    grouped[dateKey].forEach((supplement, index) => {
+    grouped[key].forEach((supplement, index) => {
       const box = document.createElement("div");
       const cycleClass = supplement.onCycle ? `cycle-color-${(index % 4) + 1}` : "";
       box.className = `supplement-box cycle-strip ${cycleClass}`;
