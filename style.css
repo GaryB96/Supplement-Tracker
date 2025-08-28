@@ -67,39 +67,6 @@ button:hover {
   margin-right: 10px;
 }
 
-#calendarContainer {
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-#calendar {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 5px;
-  margin-top: 10px;
-}
-
-.day {
-  background-color: #ffffff;
-  border: 1px solid #ccc;
-  height: 60px;
-  position: relative;
-  text-align: center;
-  line-height: 60px;
-  font-weight: bold;
-  border-radius: 4px;
-}
-
-.highlight {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #00796b;
-  opacity: 0.3;
-  border-radius: 4px;
-}
 /* Cycle color strips */
 .cycle-strip {
   border-left: 6px solid #4CAF50; /* Default green */
@@ -121,6 +88,11 @@ button:hover {
 .cycle-color-4 {
   border-left-color: #E91E63; /* Pink */
 }
+#calendarContainer {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
 .month-header {
   font-size: 1.5em;
   font-weight: bold;
@@ -132,23 +104,31 @@ button:hover {
 .weekday-row {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  margin-bottom: 5px;
+  text-align: center;
+  font-weight: bold;
+  background-color: #f0f0f0;
+  border-bottom: 1px solid #ccc;
 }
 
 .weekday-cell {
-  text-align: center;
-  font-weight: bold;
-  padding: 5px;
-  background-color: #f0f0f0;
-  border-bottom: 1px solid #ccc;
+  padding: 10px 0;
+  border-right: 1px solid #ddd;
+}
+
+#calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+  margin-top: 10px;
 }
 
 .day {
   position: relative;
   border: 1px solid #ddd;
   height: 80px;
-  padding: 5px;
+  background-color: #fff;
   box-sizing: border-box;
+  border-radius: 4px;
 }
 
 .day-number {
@@ -166,4 +146,11 @@ button:hover {
   right: 5px;
   height: 10px;
   border-radius: 4px;
+  background-color: #00796b;
+  opacity: 0.3;
+}
+
+.empty {
+  background-color: transparent;
+  border: none;
 }
