@@ -127,7 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function getCycleColor(index) {
-    const colors = ["#2196F3", "#FF9800", "#9C27B0", "#E91E63"]; 
+    const colors = ["#2196F3", "#FF9800", "#9C27B0", "#E91E63"];
     return colors[index % colors.length];
   }
 
