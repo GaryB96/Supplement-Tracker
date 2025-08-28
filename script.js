@@ -107,15 +107,15 @@ function renderCalendar() {
   const supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
   const today = new Date();
   const year = today.getFullYear();
-  const month = today.getMonth(); // 0-indexed
+  const month = today.getMonth();
   const monthName = today.toLocaleString("default", { month: "long" });
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  // Month name header
+  // Month header
   const monthHeader = document.createElement("div");
   monthHeader.className = "month-header";
   monthHeader.textContent = `${monthName} ${year}`;
-  calendar.appendChild(monthHeader);
+  calendarContainer.insertBefore(monthHeader, calendar);
 
   // Weekday headers
   const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -127,7 +127,7 @@ function renderCalendar() {
     dayCell.textContent = day;
     weekdayRow.appendChild(dayCell);
   });
-  calendar.appendChild(weekdayRow);
+  calendarContainer.insertBefore(weekdayRow, calendar);
 
   // Padding for first day of the month
   const firstDay = new Date(year, month, 1).getDay(); // 0 = Sunday
