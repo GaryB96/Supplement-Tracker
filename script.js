@@ -104,8 +104,8 @@ function renderCalendar() {
   calendar.innerHTML = "";
 
   // Remove previous headers if they exist
-  const oldMonthHeader = document.querySelector(".month-header");
-  const oldWeekdayRow = document.querySelector(".weekday-row");
+  const oldMonthHeader = calendarContainer.querySelector(".month-header");
+  const oldWeekdayRow = calendarContainer.querySelector(".weekday-row");
   if (oldMonthHeader) oldMonthHeader.remove();
   if (oldWeekdayRow) oldWeekdayRow.remove();
 
