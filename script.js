@@ -99,12 +99,16 @@ window.editSupplement = function(index) {
   }
 
 function renderCalendar() {
+  const calendarContainer = document.getElementById("calendarContainer");
+  const calendar = document.getElementById("calendar");
   calendar.innerHTML = "";
 
+  // Remove previous headers if they exist
   const oldMonthHeader = document.querySelector(".month-header");
   const oldWeekdayRow = document.querySelector(".weekday-row");
   if (oldMonthHeader) oldMonthHeader.remove();
   if (oldWeekdayRow) oldWeekdayRow.remove();
+
   
   const supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
   const year = today.getFullYear();
