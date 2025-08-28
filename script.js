@@ -7,6 +7,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const cycleCheckbox = document.getElementById("cycleCheckbox");
   const cycleDetails = document.getElementById("cycleDetails");
   const supplementSummaryContainer = document.getElementById("supplementSummaryContainer");
+  const currentMonthLabel = document.getElementById("currentMonthLabel");
+  const prevMonthBtn = document.getElementById("prevMonth");
+  const nextMonthBtn = document.getElementById("nextMonth");
+
+  let currentYear = new Date().getFullYear();
+  let currentMonth = new Date().getMonth(); // 0 = January
 
   function refreshData() {
     supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
@@ -65,16 +71,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (oldMonthHeader) oldMonthHeader.remove();
     if (oldWeekdayRow) oldWeekdayRow.remove();
 
-    const today = new Date();
-    const monthName = today.toLocaleString("default", { month: "long" });
-    const year = today.getFullYear();
-    const month = today.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const monthName = new Date(currentYear, currentMonth).toLocaleString("default", { month: "long" });
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
 
-    const monthHeader = document.createElement("div");
-    monthHeader.className = "month-header";
-    monthHeader.textContent = `${monthName} ${year}`;
-    calendarContainer.insertBefore(monthHeader, calendar);
+    currentMonthLabel.textContent = `${monthName} ${currentYear}`;
 
     const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const weekdayRow = document.createElement("div");
@@ -87,7 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     calendarContainer.insertBefore(weekdayRow, calendar);
 
-    const firstDay = new Date(year, month, 1).getDay();
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
     for (let i = 0; i < firstDay; i++) {
       const emptyCell = document.createElement("div");
       emptyCell.className = "day empty";
@@ -103,7 +103,6 @@ document.addEventListener("DOMContentLoaded", () => {
       dayNumber.textContent = day;
       cell.appendChild(dayNumber);
 
-      // Container for stacked highlights
       const highlightsContainer = document.createElement("div");
       highlightsContainer.className = "highlights-container";
 
@@ -111,13 +110,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (supplement.onCycle) {
           const cycleLength = supplement.onDays + supplement.offDays;
           if (cycleLength > 0) {
-            const startDay = 1;
-            const cycleDay = (day - startDay) % cycleLength;
-            if (cycleDay >= 0 && cycleDay < supplement.onDays) {
+            const cycleDay = (day - 1) % cycleLength;
+            if (cycleDay < supplement.onDays) {
               const highlight = document.createElement("div");
               highlight.className = "highlight-bar";
-              // Use the same colors as the summary box left border
               highlight.style.backgroundColor = getCycleColor(index);
+              highlight.title = supplement.name;
               highlightsContainer.appendChild(highlight);
             }
           }
@@ -129,13 +127,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // These colors must match the .cycle-color-x border-left-color in style.css
   function getCycleColor(index) {
     const colors = [
-      "#2196F3", // cycle-color-1
-      "#FF9800", // cycle-color-2
-      "#9C27B0", // cycle-color-3
-      "#E91E63"  // cycle-color-4
+      "#2196F3",
+      "#FF9800",
+      "#9C27B0",
+      "#E91E63"
     ];
     return colors[index % colors.length];
   }
@@ -162,6 +159,23 @@ document.addEventListener("DOMContentLoaded", () => {
     refreshData();
   };
 
-  // Initial render
+  prevMonthBtn.addEventListener("click", () => {
+    currentMonth--;
+    if (currentMonth < 0) {
+      currentMonth = 11;
+      currentYear--;
+    }
+    renderCalendar();
+  });
+
+  nextMonthBtn.addEventListener("click", () => {
+    currentMonth++;
+    if (currentMonth > 11) {
+      currentMonth = 0;
+      currentYear++;
+    }
+    renderCalendar();
+  });
+
   refreshData();
 });
