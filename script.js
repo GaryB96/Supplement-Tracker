@@ -6,7 +6,6 @@ window.addEventListener('load', () => {
     supplements.push(...JSON.parse(saved));
     renderDashboard();
     renderCalendar();
-    renderSupplementList();
     renderSupplementSummaries();
   }
 });
