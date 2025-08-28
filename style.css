@@ -1,147 +1,12 @@
-body {
-  font-family: 'Segoe UI', sans-serif;
-  background-color: #f4f6f8;
-  margin: 0;
-  padding: 20px;
-  color: #333;
-}
-
-h1, h2 {
-  text-align: center;
-  color: #00796b;
-}
-
-form {
-  background-color: #ffffff;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-  max-width: 500px;
-  margin: 0 auto 30px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-input, select, button {
-  padding: 10px;
-  font-size: 16px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-button {
-  background-color: #00796b;
 .edit-btn {
   background: #4caf50;
-color: white;
-border: none;
+  color: white;
+  border: none;
   padding: 4px 8px;
   margin-right: 4px;
-cursor: pointer;
+  cursor: pointer;
   border-radius: 3px;
 }
-
-button:hover {
-  background-color: #005f56;
-}
-
-.hidden {
-  display: none;
-}
-
-.summary-container {
-  max-width: 600px;
-  margin: 0 auto 30px;
-}
-
-.supplement-box {
-  background-color: #ffffff;
-  border-left: 5px solid #00796b;
-  padding: 15px;
-  margin-bottom: 10px;
-  border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-.actions {
-  margin-top: 10px;
-}
-
-.actions button {
-  margin-right: 10px;
-}
-
-/* Cycle color strips */
-.cycle-strip {
-  border-left: 6px solid #4CAF50; /* Default green */
-  padding-left: 10px;
-}
-
-.cycle-color-1 {
-  border-left-color: #2196F3; /* Blue */
-}
-
-.cycle-color-2 {
-  border-left-color: #FF9800; /* Orange */
-}
-
-.cycle-color-3 {
-  border-left-color: #9C27B0; /* Purple */
-}
-
-.cycle-color-4 {
-  border-left-color: #E91E63; /* Pink */
-}
-#calendarContainer {
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-.month-header {
-  font-size: 1.5em;
-  font-weight: bold;
-  text-align: center;
-  margin-bottom: 10px;
-  color: #00796b;
-}
-
-.weekday-row {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  text-align: center;
-  font-weight: bold;
-  background-color: #f0f0f0;
-  border-bottom: 1px solid #ccc;
-}
-
-.weekday-cell {
-  padding: 10px 0;
-  border-right: 1px solid #ddd;
-}
-
-#calendar {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 5px;
-  margin-top: 10px;
-}
-
-.day {
-  position: relative;
-  border: 1px solid #ddd;
-  height: 80px;
-  background-color: #fff;
-  box-sizing: border-box;
-  border-radius: 4px;
-}
-
-.day-number {
-  position: absolute;
-  top: 5px;
-  left: 5px;
-  font-weight: bold;
-  font-size: 0.9em;
 .delete-btn {
   background: #f44336;
   color: white;
@@ -151,23 +16,12 @@ button:hover {
   border-radius: 3px;
 }
 
-.highlight {
 /* Highlight stacking for calendar supplement cycles */
 .highlights-container {
-position: absolute;
-bottom: 5px;
-left: 5px;
-right: 5px;
-  height: 10px;
-  border-radius: 4px;
-  background-color: #00796b;
-  opacity: 0.3;
-}
-
-.empty {
-  background-color: transparent;
-  border: none;
-}
+  position: absolute;
+  bottom: 5px;
+  left: 5px;
+  right: 5px;
   display: flex;
   flex-direction: column;
   gap: 2px;
