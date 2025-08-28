@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const nextMonthBtn = document.getElementById("nextMonth");
 
   let currentYear = new Date().getFullYear();
-  let currentMonth = new Date().getMonth(); // 0 = January
+  let currentMonth = new Date().getMonth();
 
   function refreshData() {
     supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
@@ -66,14 +66,8 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderCalendar() {
     calendar.innerHTML = "";
 
-    const oldMonthHeader = calendarContainer.querySelector(".month-header");
-    const oldWeekdayRow = calendarContainer.querySelector(".weekday-row");
-    if (oldMonthHeader) oldMonthHeader.remove();
-    if (oldWeekdayRow) oldWeekdayRow.remove();
-
     const monthName = new Date(currentYear, currentMonth).toLocaleString("default", { month: "long" });
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-
     currentMonthLabel.textContent = `${monthName} ${currentYear}`;
 
     const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -85,7 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
       dayCell.textContent = day;
       weekdayRow.appendChild(dayCell);
     });
-    calendarContainer.insertBefore(weekdayRow, calendar);
+    calendar.appendChild(weekdayRow);
 
     const firstDay = new Date(currentYear, currentMonth, 1).getDay();
     for (let i = 0; i < firstDay; i++) {
@@ -128,12 +122,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function getCycleColor(index) {
-    const colors = [
-      "#2196F3",
-      "#FF9800",
-      "#9C27B0",
-      "#E91E63"
-    ];
+    const colors = ["#2196F3", "#FF9800", "#9C27B0", "#E91E63"];
     return colors[index % colors.length];
   }
 
