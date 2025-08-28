@@ -37,45 +37,23 @@ function renderSupplements() {
   supplementSummaryContainer.innerHTML = "";
   const supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
 
-  // Group supplements by month/day
-  const grouped = {};
-  supplements.forEach((supplement) => {
-    const key = `${supplement.month}-${supplement.day}`;
-    if (!grouped[key]) {
-      grouped[key] = [];
-    }
-    grouped[key].push(supplement);
-  });
+  supplements.forEach((supplement, index) => {
+    const box = document.createElement("div");
+    const cycleClass = supplement.onCycle ? `cycle-color-${(index % 4) + 1}` : "";
+    box.className = `supplement-box cycle-strip ${cycleClass}`;
 
-  // Render each group
-  Object.keys(grouped).forEach((key) => {
-    const [month, day] = key.split("-");
+    box.innerHTML = `
+      <div><strong>${supplement.name}</strong></div>
+      <div>Dosage: ${supplement.dosage}</div>
+      <div>Time: ${supplement.time}</div>
+      ${supplement.onCycle ? `<div>Cycle: ${supplement.onDays} days on / ${supplement.offDays} days off</div>` : ""}
+      <div class="actions">
+        <button onclick="editSupplement(${index})">Edit</button>
+        <button onclick="deleteSupplement(${index})">Delete</button>
+      </div>
+    `;
 
-    // Create header once per group
-    const header = document.createElement("div");
-    header.className = "calendar-header";
-    header.textContent = `${month} ${day}`;
-    supplementSummaryContainer.appendChild(header);
-
-    // Render supplements under this header
-    grouped[key].forEach((supplement, index) => {
-      const box = document.createElement("div");
-      const cycleClass = supplement.onCycle ? `cycle-color-${(index % 4) + 1}` : "";
-      box.className = `supplement-box cycle-strip ${cycleClass}`;
-
-      box.innerHTML = `
-        <div><strong>${supplement.name}</strong></div>
-        <div>Dosage: ${supplement.dosage}</div>
-        <div>Time: ${supplement.time}</div>
-        ${supplement.onCycle ? `<div>Cycle: ${supplement.onDays} days on / ${supplement.offDays} days off</div>` : ""}
-        <div class="actions">
-          <button onclick="editSupplement(${index})">Edit</button>
-          <button onclick="deleteSupplement(${index})">Delete</button>
-        </div>
-      `;
-
-      supplementSummaryContainer.appendChild(box);
-    });
+    supplementSummaryContainer.appendChild(box);
   });
 }
 
@@ -123,11 +101,14 @@ window.editSupplement = function(index) {
 function renderCalendar() {
   calendar.innerHTML = "";
 
+  const oldMonthHeader = document.querySelector(".month-header");
+  const oldWeekdayRow = document.querySelector(".weekday-row");
+  if (oldMonthHeader) oldMonthHeader.remove();
+  if (oldWeekdayRow) oldWeekdayRow.remove();
+  
   const supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
-  const today = new Date();
   const year = today.getFullYear();
   const month = today.getMonth();
-  const monthName = today.toLocaleString("default", { month: "long" });
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   // Month header
