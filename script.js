@@ -40,7 +40,6 @@ document.getElementById('supplementForm').addEventListener('submit', function (e
   localStorage.setItem('supplements', JSON.stringify(supplements));
   renderDashboard();
   renderCalendar();
-  renderSupplementList();
   renderSupplementSummaries();
   this.reset();
   document.getElementById('cycleDetails').style.display = 'none';
@@ -150,7 +149,6 @@ function deleteSupplement(index) {
   localStorage.setItem('supplements', JSON.stringify(supplements));
   renderDashboard();
   renderCalendar();
-  renderSupplementList();
   renderSupplementSummaries();
 }
 
@@ -167,14 +165,12 @@ function editSupplement(index) {
     localStorage.setItem('supplements', JSON.stringify(supplements));
     renderDashboard();
     renderCalendar();
-    renderSupplementList();
     renderSupplementSummaries();
   }
 }
 
 document.getElementById('viewCalendarBtn').addEventListener('click', () => {
   renderCalendar();
-  renderSupplementList();
   if (supplements.length === 0) {
     const container = document.getElementById('supplementSummaryContainer');
     container.innerHTML = '<p>No supplements added yet.</p>';
