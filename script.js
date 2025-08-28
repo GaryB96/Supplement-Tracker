@@ -166,6 +166,7 @@ function renderCalendar() {
           cell.appendChild(highlight);
         }
       }
+      console.log("Calendar rendered");
     });
 
     calendar.appendChild(cell);
