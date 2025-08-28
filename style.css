@@ -113,3 +113,26 @@ form {
   border-radius: 10px;
   opacity: 0.8;
 }
+
+.calendar-nav {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.calendar-nav button {
+  padding: 6px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 4px;
+  border: none;
+  background-color: #2196F3;
+  color: white;
+}
+
+#currentMonthLabel {
+  font-weight: bold;
+  font-size: 16px;
+}
