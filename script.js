@@ -183,4 +183,37 @@ document.getElementById('viewCalendarBtn').addEventListener('click', () => {
 });
 
 function renderCalendar() {
+  const calendar = document.getElementById('calendar');
+  calendar.innerHTML = '';
+
+  const today = new Date();
+  const month = today.getMonth();
+  const year = today.getFullYear();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dayCell = document.createElement('div');
+    dayCell.className = 'day';
+    dayCell.textContent = day;
+
+    supplements.forEach(supp => {
+      const start = new Date(supp.startDate);
+      const currentDate = new Date(year, month, day);
+      const dayOffset = Math.floor((currentDate - start) / (1000 * 60 * 60 * 24));
+      const cycleLength = supp.isCycled
+        ? supp.cyclePattern.onDays + supp.cyclePattern.offDays
+        : 1;
+      const dayInCycle = dayOffset % cycleLength;
+      const isActive = !supp.isCycled || dayInCycle < supp.cyclePattern.onDays;
+
+      if (isActive && dayOffset >= 0) {
+        const highlight = document.createElement('div');
+        highlight.className = 'highlight';
+        highlight.style.backgroundColor = supp.color;
+        dayCell.appendChild(highlight);
+      }
+    });
+
+    calendar.appendChild(dayCell);
+  }
 }
