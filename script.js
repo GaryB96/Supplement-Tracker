@@ -8,7 +8,6 @@ window.addEventListener('load', () => {
     renderCalendar();
     renderSupplementList();
     renderSupplementSummaries();
-    console.log("Rendering supplement summaries...");
   }
 });
 
@@ -46,6 +45,7 @@ document.getElementById('supplementForm').addEventListener('submit', function (e
   renderSupplementSummaries();
   this.reset();
   document.getElementById('cycleDetails').style.display = 'none';
+  console.log(supplements);
 });
 
 function getRandomColor() {
@@ -114,7 +114,7 @@ function renderSupplementSummaries() {
   supplements.forEach((supp, index) => {
     const box = document.createElement('div');
     box.className = 'supplement-box';
-
+console.log(box.innerHTML);
     const dateAdded = new Date(supp.startDate).toDateString();
     let cycleInfo = '';
 
@@ -141,6 +141,8 @@ function renderSupplementSummaries() {
     `;
 
     container.appendChild(box);
+    console.log("Rendering supplement summaries...");
+    console.log(document.getElementById('supplementSummaryContainer'));
   });
 }
 
@@ -174,6 +176,10 @@ function editSupplement(index) {
 document.getElementById('viewCalendarBtn').addEventListener('click', () => {
   renderCalendar();
   renderSupplementList();
+  if (supplements.length === 0) {
+  container.innerHTML = '<p>No supplements added yet.</p>';
+  return;
+}
 });
 
 function renderCalendar
