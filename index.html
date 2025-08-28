@@ -2,12 +2,72 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Supplement Tracker</title>
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px;
+      background-color: #f9f9f9;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    input, select, button {
+      padding: 10px;
+      font-size: 16px;
+    }
+
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    #summaryBox {
+      max-width: 400px;
+      margin: 20px auto;
+      padding: 15px;
+      background-color: #e0f7fa;
+      border-left: 5px solid #00796b;
+      display: none;
+    }
+
+    #calendarContainer {
+      max-width: 600px;
+      margin: 30px auto;
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+  </style>
 </head>
 <body>
+
   <h1>Supplement Tracker</h1>
 
+  <!-- 🧾 Input Form -->
   <form id="supplementForm">
     <input id="nameInput" placeholder="Supplement name" required />
     <input id="dosageInput" placeholder="Dosage (e.g., 500mg)" required />
@@ -17,9 +77,9 @@
       <option value="Evening">Evening</option>
     </select>
 
-    <label for="cycleCheckbox">
+    <label>
       <input type="checkbox" id="cycleCheckbox" />
-      <span>On a cycle</span>
+      On a cycle
     </label>
 
     <div id="cycleDetails" style="display:none;">
@@ -30,37 +90,49 @@
     <button type="submit">Add Supplement</button>
   </form>
 
-  <h2>Today's Supplements</h2>
-  <div id="dashboard"></div>
-  <div id="supplementSummaryContainer" class="summary-container"></div>
-  <style>
-  .summary-container {
-    margin-top: 20px;
-  }
+  <!-- 📦 Summary Box -->
+  <div id="summaryBox"></div>
 
-  .supplement-box {
-    border: 1px solid #ccc;
-    padding: 10px;
-    margin-bottom: 10px;
-    background-color: #f9f9f9;
-    position: relative;
-  }
-
-  .supplement-box .actions {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-  }
-
-  .supplement-box .actions button {
-    margin-left: 5px;
-  }
-</style>
+  <!-- 📅 Calendar -->
   <div id="calendarContainer">
-    <div id="calendar"></div>
-    <div id="supplementList"></div>
+    <h2>Cycle Calendar</h2>
+    <p>[Your calendar rendering logic goes here]</p>
   </div>
 
-  <script src="script.js"></script>
+  <script>
+    // Toggle cycle details
+    document.getElementById("cycleCheckbox").addEventListener("change", function () {
+      document.getElementById("cycleDetails").style.display = this.checked ? "block" : "none";
+    });
+
+    // Handle form submission
+    document.getElementById("supplementForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const name = document.getElementById("nameInput").value;
+      const dosage = document.getElementById("dosageInput").value;
+      const time = document.getElementById("timeInput").value;
+      const isCycled = document.getElementById("cycleCheckbox").checked;
+      const onDays = document.getElementById("onDaysInput").value;
+      const offDays = document.getElementById("offDaysInput").value;
+
+      let summary = `<h3>Supplement Added</h3>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Dosage:</strong> ${dosage}</p>
+        <p><strong>Time:</strong> ${time}</p>`;
+
+      if (isCycled) {
+        summary += `<p><strong>Cycle:</strong> ${onDays} days on / ${offDays} days off</p>`;
+      }
+
+      const summaryBox = document.getElementById("summaryBox");
+      summaryBox.innerHTML = summary;
+      summaryBox.style.display = "block";
+
+      this.reset();
+      document.getElementById("cycleDetails").style.display = "none";
+    });
+  </script>
+
 </body>
 </html>
