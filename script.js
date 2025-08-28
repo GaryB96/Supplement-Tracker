@@ -4,7 +4,7 @@ window.addEventListener('load', () => {
   const saved = localStorage.getItem('supplements');
   if (saved) {
     supplements.push(...JSON.parse(saved));
-   ' renderDashboard();
+    renderDashboard();
     renderCalendar();
     renderSupplementSummaries();
   }
@@ -38,7 +38,7 @@ document.getElementById('supplementForm').addEventListener('submit', function (e
 
   supplements.push(supplement);
   localStorage.setItem('supplements', JSON.stringify(supplements));
-'  renderDashboard();
+  renderDashboard();
   renderCalendar();
   renderSupplementSummaries();
   this.reset();
@@ -147,7 +147,7 @@ console.log(box.innerHTML);
 function deleteSupplement(index) {
   supplements.splice(index, 1);
   localStorage.setItem('supplements', JSON.stringify(supplements));
-'  renderDashboard();
+  renderDashboard();
   renderCalendar();
   renderSupplementSummaries();
 }
@@ -163,7 +163,7 @@ function editSupplement(index) {
     supplements[index].dosage = newDosage;
     supplements[index].time = newTime;
     localStorage.setItem('supplements', JSON.stringify(supplements));
- '   renderDashboard();
+    renderDashboard();
     renderCalendar();
     renderSupplementSummaries();
   }
