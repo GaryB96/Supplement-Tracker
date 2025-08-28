@@ -38,8 +38,12 @@ function renderSupplements() {
   const supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
 
   supplements.forEach((supplement, index) => {
-    const box = document.createElement("div");
-    box.className = "supplement-box";
+const box = document.createElement("div");
+
+// Assign a cycle color class if onCycle is true
+const cycleClass = supplement.onCycle ? `cycle-color-${(index % 4) + 1}` : "";
+
+box.className = `supplement-box cycle-strip ${cycleClass}`;
 
     box.innerHTML = `
       <div><strong>${supplement.name}</strong></div>
