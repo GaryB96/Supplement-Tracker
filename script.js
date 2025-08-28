@@ -37,26 +37,47 @@ function renderSupplements() {
   supplementSummaryContainer.innerHTML = "";
   const supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
 
-  supplements.forEach((supplement, index) => {
-const box = document.createElement("div");
+  // Group supplements by date
+  const grouped = {};
+  supplements.forEach((supplement) => {
+    const dateKey = `${supplement.month}-${supplement.day}`;
+    if (!grouped[dateKey]) {
+      grouped[dateKey] = [];
+    }
+    grouped[dateKey].push(supplement);
+  });
 
-// Assign a cycle color class if onCycle is true
-const cycleClass = supplement.onCycle ? `cycle-color-${(index % 4) + 1}` : "";
+  // Render each group with a single header
+  Object.keys(grouped).forEach((dateKey) => {
+    const [month, day] = dateKey.split("-");
+    const headerId = `header-${month}-${day}`;
 
-box.className = `supplement-box cycle-strip ${cycleClass}`;
+    // Create header if not already present
+    const header = document.createElement("div");
+    header.id = headerId;
+    header.className = "calendar-header";
+    header.textContent = `${month} ${day}`;
+    supplementSummaryContainer.appendChild(header);
 
-    box.innerHTML = `
-      <div><strong>${supplement.name}</strong></div>
-      <div>Dosage: ${supplement.dosage}</div>
-      <div>Time: ${supplement.time}</div>
-      ${supplement.onCycle ? `<div>Cycle: ${supplement.onDays} days on / ${supplement.offDays} days off</div>` : ""}
-      <div class="actions">
-        <button onclick="editSupplement(${index})">Edit</button>
-        <button onclick="deleteSupplement(${index})">Delete</button>
-      </div>
-    `;
+    // Render supplements under this header
+    grouped[dateKey].forEach((supplement, index) => {
+      const box = document.createElement("div");
+      const cycleClass = supplement.onCycle ? `cycle-color-${(index % 4) + 1}` : "";
+      box.className = `supplement-box cycle-strip ${cycleClass}`;
 
-    supplementSummaryContainer.appendChild(box);
+      box.innerHTML = `
+        <div><strong>${supplement.name}</strong></div>
+        <div>Dosage: ${supplement.dosage}</div>
+        <div>Time: ${supplement.time}</div>
+        ${supplement.onCycle ? `<div>Cycle: ${supplement.onDays} days on / ${supplement.offDays} days off</div>` : ""}
+        <div class="actions">
+          <button onclick="editSupplement(${index})">Edit</button>
+          <button onclick="deleteSupplement(${index})">Delete</button>
+        </div>
+      `;
+
+      supplementSummaryContainer.appendChild(box);
+    });
   });
 }
 
