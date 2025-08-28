@@ -1,6 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("supplementForm");
-  const dashboard = document.getElementById("dashboard");
   const calendar = document.getElementById("calendar");
   const cycleCheckbox = document.getElementById("cycleCheckbox");
   const cycleDetails = document.getElementById("cycleDetails");
