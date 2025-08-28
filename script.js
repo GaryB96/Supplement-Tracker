@@ -103,6 +103,10 @@ document.addEventListener("DOMContentLoaded", () => {
       dayNumber.textContent = day;
       cell.appendChild(dayNumber);
 
+      // Container for stacked highlights
+      const highlightsContainer = document.createElement("div");
+      highlightsContainer.className = "highlights-container";
+
       supplements.forEach((supplement, index) => {
         if (supplement.onCycle) {
           const cycleLength = supplement.onDays + supplement.offDays;
@@ -110,19 +114,20 @@ document.addEventListener("DOMContentLoaded", () => {
           const cycleDay = (day - startDay) % cycleLength;
           if (cycleDay < supplement.onDays) {
             const highlight = document.createElement("div");
-            highlight.className = "highlight";
+            highlight.className = "highlight-bar";
             highlight.style.backgroundColor = getCycleColor(index);
-            cell.appendChild(highlight);
+            highlightsContainer.appendChild(highlight);
           }
         }
       });
 
+      cell.appendChild(highlightsContainer);
       calendar.appendChild(cell);
     }
   }
 
   function getCycleColor(index) {
-    const colors = ["#2196F3", "#FF9800", "#9C27B0", "#E91E63"];
+    const colors = ["#2196F3", "#FF9800", "#9C27B0", "#E91E63"]; 
     return colors[index % colors.length];
   }
 
