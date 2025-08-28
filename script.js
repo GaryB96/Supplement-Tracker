@@ -182,4 +182,5 @@ document.getElementById('viewCalendarBtn').addEventListener('click', () => {
 }
 });
 
-function renderCalendar
+function renderCalendar() {
+}
