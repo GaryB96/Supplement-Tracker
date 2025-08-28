@@ -103,26 +103,40 @@ document.addEventListener("DOMContentLoaded", () => {
       dayNumber.textContent = day;
       cell.appendChild(dayNumber);
 
+      // Container for stacked highlights
+      const highlightsContainer = document.createElement("div");
+      highlightsContainer.className = "highlights-container";
+
       supplements.forEach((supplement, index) => {
         if (supplement.onCycle) {
           const cycleLength = supplement.onDays + supplement.offDays;
-          const startDay = 1;
-          const cycleDay = (day - startDay) % cycleLength;
-          if (cycleDay < supplement.onDays) {
-            const highlight = document.createElement("div");
-            highlight.className = "highlight";
-            highlight.style.backgroundColor = getCycleColor(index);
-            cell.appendChild(highlight);
+          if (cycleLength > 0) {
+            const startDay = 1;
+            const cycleDay = (day - startDay) % cycleLength;
+            if (cycleDay >= 0 && cycleDay < supplement.onDays) {
+              const highlight = document.createElement("div");
+              highlight.className = "highlight-bar";
+              // Use the same colors as the summary box left border
+              highlight.style.backgroundColor = getCycleColor(index);
+              highlightsContainer.appendChild(highlight);
+            }
           }
         }
       });
 
+      cell.appendChild(highlightsContainer);
       calendar.appendChild(cell);
     }
   }
 
+  // These colors must match the .cycle-color-x border-left-color in style.css
   function getCycleColor(index) {
-    const colors = ["#2196F3", "#FF9800", "#9C27B0", "#E91E63"];
+    const colors = [
+      "#2196F3", // cycle-color-1
+      "#FF9800", // cycle-color-2
+      "#9C27B0", // cycle-color-3
+      "#E91E63"  // cycle-color-4
+    ];
     return colors[index % colors.length];
   }
 
