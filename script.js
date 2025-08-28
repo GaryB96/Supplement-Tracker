@@ -177,10 +177,12 @@ document.getElementById('viewCalendarBtn').addEventListener('click', () => {
   renderCalendar();
   renderSupplementList();
   if (supplements.length === 0) {
-  container.innerHTML = '<p>No supplements added yet.</p>';
-  return;
-}
+    const container = document.getElementById('supplementSummaryContainer');
+    container.innerHTML = '<p>No supplements added yet.</p>';
+    return;
+  }
 });
+
 
 function renderCalendar() {
   const calendar = document.getElementById('calendar');
