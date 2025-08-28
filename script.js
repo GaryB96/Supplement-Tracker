@@ -101,35 +101,78 @@ window.editSupplement = function(index) {
     });
   }
 
-  function renderCalendar() {
-    calendar.innerHTML = "";
-    const supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
-    const today = new Date();
-    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+function renderCalendar() {
+  calendar.innerHTML = "";
 
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(today.getFullYear(), today.getMonth(), day);
-      const cell = document.createElement("div");
-      cell.className = "day";
-      cell.textContent = day;
+  const supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth(); // 0-indexed
+  const monthName = today.toLocaleString("default", { month: "long" });
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-      supplements.forEach((supplement) => {
-        if (supplement.onCycle) {
-          const cycleLength = supplement.onDays + supplement.offDays;
-          const startDay = 1;
-          const cycleDay = (day - startDay) % cycleLength;
-          if (cycleDay < supplement.onDays) {
-            const highlight = document.createElement("div");
-            highlight.className = "highlight";
-            highlight.style.backgroundColor = "#00796b";
-            cell.appendChild(highlight);
-          }
-        }
-      });
+  // Month name header
+  const monthHeader = document.createElement("div");
+  monthHeader.className = "month-header";
+  monthHeader.textContent = `${monthName} ${year}`;
+  calendar.appendChild(monthHeader);
 
-      calendar.appendChild(cell);
-    }
+  // Weekday headers
+  const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const weekdayRow = document.createElement("div");
+  weekdayRow.className = "weekday-row";
+  weekdays.forEach(day => {
+    const dayCell = document.createElement("div");
+    dayCell.className = "weekday-cell";
+    dayCell.textContent = day;
+    weekdayRow.appendChild(dayCell);
+  });
+  calendar.appendChild(weekdayRow);
+
+  // Padding for first day of the month
+  const firstDay = new Date(year, month, 1).getDay(); // 0 = Sunday
+  for (let i = 0; i < firstDay; i++) {
+    const emptyCell = document.createElement("div");
+    emptyCell.className = "day empty";
+    calendar.appendChild(emptyCell);
   }
+
+  // Actual days
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month, day);
+    const cell = document.createElement("div");
+    cell.className = "day";
+
+    // Day number in top-left corner
+    const dayNumber = document.createElement("div");
+    dayNumber.className = "day-number";
+    dayNumber.textContent = day;
+    cell.appendChild(dayNumber);
+
+    // Cycle highlights
+    supplements.forEach((supplement, index) => {
+      if (supplement.onCycle) {
+        const cycleLength = supplement.onDays + supplement.offDays;
+        const startDay = 1;
+        const cycleDay = (day - startDay) % cycleLength;
+        if (cycleDay < supplement.onDays) {
+          const highlight = document.createElement("div");
+          highlight.className = "highlight";
+          highlight.style.backgroundColor = getCycleColor(index);
+          cell.appendChild(highlight);
+        }
+      }
+    });
+
+    calendar.appendChild(cell);
+  }
+}
+
+// Helper to match cycle color
+function getCycleColor(index) {
+  const colors = ["#2196F3", "#FF9800", "#9C27B0", "#E91E63"];
+  return colors[index % colors.length];
+}
 
   renderSupplements();
   renderCalendar();
