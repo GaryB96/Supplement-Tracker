@@ -15,3 +15,20 @@
   cursor: pointer;
   border-radius: 3px;
 }
+
+/* Highlight stacking for calendar supplement cycles */
+.highlights-container {
+  position: absolute;
+  bottom: 5px;
+  left: 5px;
+  right: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 1;
+}
+.highlight-bar {
+  height: 8px;
+  border-radius: 2px;
+  opacity: 0.5;
+}
