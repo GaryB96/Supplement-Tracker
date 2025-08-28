@@ -24,6 +24,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const supplement = { name, dosage, time, onCycle, onDays, offDays };
     saveSupplement(supplement);
+  renderSupplements();
+  renderSummary();
+  renderCalendar();
     form.reset();
     cycleDetails.classList.add("hidden");
   });
