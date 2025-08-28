@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const cycleCheckbox = document.getElementById("cycleCheckbox");
   const cycleDetails = document.getElementById("cycleDetails");
   const supplementSummaryContainer = document.getElementById("supplementSummaryContainer");
-
+  renderSupplements();
   cycleCheckbox.addEventListener("change", () => {
   cycleDetails.classList.toggle("hidden", !cycleCheckbox.checked);
   });
