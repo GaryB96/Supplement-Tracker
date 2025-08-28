@@ -85,12 +85,14 @@ form {
 .weekday-row {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  margin-bottom: 5px;
+  margin-bottom: 10px;
+  font-weight: bold;
+  text-align: center;
 }
 
 .weekday-cell {
-  font-weight: bold;
-  text-align: center;
+  padding: 8px;
+  border-bottom: 1px solid #ccc;
 }
 
 /* Highlight stacking for calendar supplement cycles */
