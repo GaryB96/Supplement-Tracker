@@ -8,9 +8,9 @@ document.addEventListener("DOMContentLoaded", () => {
   cycleCheckbox.addEventListener("change", () => {
   cycleDetails.classList.toggle("Hidden", !cycleCheckbox.checked);
   renderSupplements();
-  renderCalendar();
-  });
 
+  });
+  renderCalendar();
   form.addEventListener("submit", (e) => {
     e.preventDefault();
 
