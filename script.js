@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
+  let supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
   const form = document.getElementById("supplementForm");
   const calendar = document.getElementById("calendar");
   const cycleCheckbox = document.getElementById("cycleCheckbox");
@@ -26,7 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const supplement = { name, dosage, time, onCycle, onDays, offDays };
     saveSupplement(supplement);
     // ✅ Refresh everything after saving
-  const supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
+  supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
   renderSupplements();
   renderSummary(supplements);
   renderCalendar();
@@ -37,14 +38,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
   function saveSupplement(supplement) {
-    const supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
+    supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
     supplements.push(supplement);
     localStorage.setItem("supplements", JSON.stringify(supplements));
   }
 
 function renderSupplements() {
   supplementSummaryContainer.innerHTML = "";
-  const supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
+  supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
 
   supplements.forEach((supplement, index) => {
     const box = document.createElement("div");
@@ -67,7 +68,7 @@ function renderSupplements() {
 }
 
 window.deleteSupplement = function(index) {
-  const supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
+  supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
   supplements.splice(index, 1);
   localStorage.setItem("supplements", JSON.stringify(supplements));
   renderSupplements();
@@ -75,7 +76,7 @@ window.deleteSupplement = function(index) {
 };
 
 window.editSupplement = function(index) {
-  const supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
+  supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
   const supplement = supplements[index];
 
   document.getElementById("nameInput").value = supplement.name;
@@ -120,7 +121,7 @@ function renderCalendar() {
   if (oldMonthHeader) oldMonthHeader.remove();
   if (oldWeekdayRow) oldWeekdayRow.remove();
   
-  const supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
+  supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
   const year = today.getFullYear();
   const month = today.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -189,7 +190,7 @@ function getCycleColor(index) {
   return colors[index % colors.length];
 }
   renderSupplements();
-const supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
+supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
 renderSummary(supplements);
   renderCalendar();
 });
