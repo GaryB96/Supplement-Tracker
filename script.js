@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const supplementSummaryContainer = document.getElementById("supplementSummaryContainer");
 
   cycleCheckbox.addEventListener("change", () => {
-  cycleDetails.classList.toggle("hidden", !cycleCheckbox.checked);
+  cycleDetails.classList.toggle("Hidden", !cycleCheckbox.checked);
   renderSupplements();
   renderCalendar();
   });
