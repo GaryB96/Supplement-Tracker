@@ -3,13 +3,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const form = document.getElementById("supplementForm");
   const calendar = document.getElementById("calendar");
+  const calendarContainer = document.getElementById("calendarContainer");
   const cycleCheckbox = document.getElementById("cycleCheckbox");
   const cycleDetails = document.getElementById("cycleDetails");
   const supplementSummaryContainer = document.getElementById("supplementSummaryContainer");
 
-  renderSupplements();
-  renderSummary(supplements);
-  renderCalendar();
+  function refreshData() {
+    supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
+    renderSupplements();
+    renderSummary();
+    renderCalendar();
+  }
 
   cycleCheckbox.addEventListener("change", () => {
     cycleDetails.classList.toggle("hidden", !cycleCheckbox.checked);
@@ -26,32 +30,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const offDays = parseInt(document.getElementById("offDaysInput").value) || 0;
 
     const supplement = { name, dosage, time, onCycle, onDays, offDays };
-    saveSupplement(supplement);
+    supplements.push(supplement);
+    localStorage.setItem("supplements", JSON.stringify(supplements));
 
-    supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
-    renderSupplements();
-    renderSummary(supplements);
-    renderCalendar();
-
+    refreshData();
     form.reset();
     cycleDetails.classList.add("hidden");
   });
 
-  function saveSupplement(supplement) {
-    supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
-    supplements.push(supplement);
-    localStorage.setItem("supplements", JSON.stringify(supplements));
-  }
-
   function renderSupplements() {
     supplementSummaryContainer.innerHTML = "";
-    supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
-
     supplements.forEach((supplement, index) => {
       const box = document.createElement("div");
       const cycleClass = supplement.onCycle ? `cycle-color-${(index % 4) + 1}` : "";
       box.className = `supplement-box cycle-strip ${cycleClass}`;
-
       box.innerHTML = `
         <div><strong>${supplement.name}</strong></div>
         <div>Dosage: ${supplement.dosage}</div>
@@ -62,40 +54,11 @@ document.addEventListener("DOMContentLoaded", () => {
           <button onclick="deleteSupplement(${index})">Delete</button>
         </div>
       `;
-
       supplementSummaryContainer.appendChild(box);
     });
   }
 
-  window.deleteSupplement = function(index) {
-    supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
-    supplements.splice(index, 1);
-    localStorage.setItem("supplements", JSON.stringify(supplements));
-    renderSupplements();
-    renderSummary(supplements);
-    renderCalendar();
-  };
-
-  window.editSupplement = function(index) {
-    supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
-    const supplement = supplements[index];
-
-    document.getElementById("nameInput").value = supplement.name;
-    document.getElementById("dosageInput").value = supplement.dosage;
-    document.getElementById("timeInput").value = supplement.time;
-    document.getElementById("cycleCheckbox").checked = supplement.onCycle;
-    document.getElementById("cycleDetails").classList.toggle("hidden", !supplement.onCycle);
-    document.getElementById("onDaysInput").value = supplement.onDays || "";
-    document.getElementById("offDaysInput").value = supplement.offDays || "";
-
-    supplements.splice(index, 1);
-    localStorage.setItem("supplements", JSON.stringify(supplements));
-    renderSupplements();
-    renderSummary(supplements);
-    renderCalendar();
-  };
-
-  function renderSummary(supplements) {
+  function renderSummary() {
     supplementSummaryContainer.innerHTML = "";
     supplements.forEach((supplement) => {
       const box = document.createElement("div");
@@ -111,10 +74,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderCalendar() {
-    const today = new Date();
-    const monthName = today.toLocaleString("default", { month: "long" });
-    const calendarContainer = document.getElementById("calendarContainer");
-    const calendar = document.getElementById("calendar");
     calendar.innerHTML = "";
 
     const oldMonthHeader = calendarContainer.querySelector(".month-header");
@@ -122,7 +81,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (oldMonthHeader) oldMonthHeader.remove();
     if (oldWeekdayRow) oldWeekdayRow.remove();
 
-    supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
+    const today = new Date();
+    const monthName = today.toLocaleString("default", { month: "long" });
     const year = today.getFullYear();
     const month = today.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -151,7 +111,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month, day);
       const cell = document.createElement("div");
       cell.className = "day";
 
@@ -182,4 +141,29 @@ document.addEventListener("DOMContentLoaded", () => {
     const colors = ["#2196F3", "#FF9800", "#9C27B0", "#E91E63"];
     return colors[index % colors.length];
   }
+
+  window.deleteSupplement = function(index) {
+    supplements.splice(index, 1);
+    localStorage.setItem("supplements", JSON.stringify(supplements));
+    refreshData();
+  };
+
+  window.editSupplement = function(index) {
+    const supplement = supplements[index];
+
+    document.getElementById("nameInput").value = supplement.name;
+    document.getElementById("dosageInput").value = supplement.dosage;
+    document.getElementById("timeInput").value = supplement.time;
+    document.getElementById("cycleCheckbox").checked = supplement.onCycle;
+    document.getElementById("cycleDetails").classList.toggle("hidden", !supplement.onCycle);
+    document.getElementById("onDaysInput").value = supplement.onDays || "";
+    document.getElementById("offDaysInput").value = supplement.offDays || "";
+
+    supplements.splice(index, 1);
+    localStorage.setItem("supplements", JSON.stringify(supplements));
+    refreshData();
+  };
+
+  // Initial render
+  refreshData();
 });
