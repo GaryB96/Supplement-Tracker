@@ -176,3 +176,4 @@ document.getElementById('viewCalendarBtn').addEventListener('click', () => {
 });
 
 function renderCalendar
+console.log("Rendering supplement summaries...");
