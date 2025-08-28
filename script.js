@@ -11,7 +11,6 @@ document.addEventListener("DOMContentLoaded", () => {
   function refreshData() {
     supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
     renderSupplements();
-    renderSummary();
     renderCalendar();
   }
 
@@ -50,24 +49,9 @@ document.addEventListener("DOMContentLoaded", () => {
         <div>Time: ${supplement.time}</div>
         ${supplement.onCycle ? `<div>Cycle: ${supplement.onDays} days on / ${supplement.offDays} days off</div>` : ""}
         <div class="actions">
-          <button onclick="editSupplement(${index})">Edit</button>
-          <button onclick="deleteSupplement(${index})">Delete</button>
+          <button class="edit-btn" onclick="editSupplement(${index})">Edit</button>
+          <button class="delete-btn" onclick="deleteSupplement(${index})">Delete</button>
         </div>
-      `;
-      supplementSummaryContainer.appendChild(box);
-    });
-  }
-
-  function renderSummary() {
-    supplementSummaryContainer.innerHTML = "";
-    supplements.forEach((supplement) => {
-      const box = document.createElement("div");
-      box.className = "supplement-box";
-      box.innerHTML = `
-        <div><strong>${supplement.name}</strong></div>
-        <div>Dosage: ${supplement.dosage}</div>
-        <div>Time: ${supplement.time}</div>
-        ${supplement.onCycle ? `<div>Cycle: ${supplement.onDays} days on / ${supplement.offDays} days off</div>` : ""}
       `;
       supplementSummaryContainer.appendChild(box);
     });
