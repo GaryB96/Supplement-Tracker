@@ -5,10 +5,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const cycleDetails = document.getElementById("cycleDetails");
   const supplementSummaryContainer = document.getElementById("supplementSummaryContainer");
   renderSupplements();
+  renderSummary();
   cycleCheckbox.addEventListener("change", () => {
   cycleDetails.classList.toggle("hidden", !cycleCheckbox.checked);
   });
   renderSupplements();
+  renderSummary();
   renderCalendar();
   form.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -179,5 +181,6 @@ function getCycleColor(index) {
   return colors[index % colors.length];
 }
   renderSupplements();
+  renderSummary();
   renderCalendar();
 });
