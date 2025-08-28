@@ -5,12 +5,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const cycleDetails = document.getElementById("cycleDetails");
   const supplementSummaryContainer = document.getElementById("supplementSummaryContainer");
   renderSupplements();
-  renderSummary();
+const supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
+renderSummary(supplements);
   cycleCheckbox.addEventListener("change", () => {
   cycleDetails.classList.toggle("hidden", !cycleCheckbox.checked);
   });
   renderSupplements();
-  renderSummary();
+const supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
+renderSummary(supplements);
   renderCalendar();
   form.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -25,7 +27,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const supplement = { name, dosage, time, onCycle, onDays, offDays };
     saveSupplement(supplement);
   renderSupplements();
-  renderSummary();
+const supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
+renderSummary(supplements);
   renderCalendar();
     form.reset();
     cycleDetails.classList.add("hidden");
@@ -184,6 +187,7 @@ function getCycleColor(index) {
   return colors[index % colors.length];
 }
   renderSupplements();
-  renderSummary();
+const supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
+renderSummary(supplements);
   renderCalendar();
 });
