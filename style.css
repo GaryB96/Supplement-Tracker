@@ -141,3 +141,18 @@ form {
   grid-template-columns: repeat(7, 1fr);
   gap: 5px;
 }
+
+@media (max-width: 600px) {
+  .weekday-row, .days-grid {
+    grid-template-columns: repeat(7, minmax(30px, 1fr));
+  }
+
+  .calendar-nav {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .supplement-box {
+    font-size: 14px;
+  }
+}
