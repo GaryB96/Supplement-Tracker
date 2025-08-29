@@ -1,9 +1,9 @@
 // supplementUI.js
-const currentUser = {
-  id: "user123",
-  name: "Gary",
-  // Add any other properties your app expects
-};
+let currentUser = null;
+window.addEventListener("user-authenticated", async e => {
+  currentUser = e.detail;
+  await refreshData(); // Now safe to call
+});
 import {
   fetchSupplements,
   addSupplement,
