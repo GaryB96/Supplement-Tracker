@@ -80,6 +80,11 @@ if (cancelEditBtn) {
 }
 
 async function refreshData() {
+  if (!currentUser || !currentUser.id) {
+    console.warn("⛔ currentUser is not ready yet.");
+    return;
+  }
+
   supplements = await fetchSupplements(currentUser.id);
   renderSupplements();
 }
