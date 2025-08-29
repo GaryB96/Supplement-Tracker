@@ -1,4 +1,5 @@
 // supplementUI.js
+console.log("✅ supplementsUI.js loaded");
 import {
   fetchSupplements,
   addSupplement,
