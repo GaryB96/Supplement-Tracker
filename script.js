@@ -1,6 +1,13 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-import {  getFirestore,  collection,  addDoc,  getDocs,  deleteDoc,  doc} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
-import {  getAuth,  createUserWithEmailAndPassword,  signInWithEmailAndPassword,  onAuthStateChanged,  signOut} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  getDocs,
+  deleteDoc,
+  doc
+} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 import {
   getAuth,
   createUserWithEmailAndPassword,
@@ -11,7 +18,6 @@ import {
   EmailAuthProvider,
   reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
-import { getDocs, deleteDoc, doc, collection } from "firebase/firestore";
 const firebaseConfig = {
   apiKey: "AIzaSyAOsbsQ77ciIFrzKWqcoNnfg2nx4P7zRqE",
   authDomain: "supplement-tracker-bec8a.firebaseapp.com",
