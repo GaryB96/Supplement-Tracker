@@ -224,3 +224,12 @@ form {
     font-size: 14px;
   }
 }
+body.logged-in #authContainer {
+  display: none;
+}
+body.logged-in #appContent {
+  display: block;
+}
+#logoutBtn {
+  margin-top: 10px;
+}
