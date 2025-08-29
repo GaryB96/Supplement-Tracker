@@ -1,18 +1,15 @@
 // auth.js
 
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAOsbsQ77ciIFrzKWqcoNnfg2nx4P7zRqE",
   authDomain: "supplement-tracker-bec8a.firebaseapp.com",
   projectId: "supplement-tracker-bec8a",
-  storageBucket: "supplement-tracker-bec8a.firebasestorage.app",
+  storageBucket: "supplement-tracker-bec8a.appspot.com",
   messagingSenderId: "394903426941",
   appId: "1:394903426941:web:be4541048a814346005e14",
   measurementId: "G-W5ZKYC8MFT"
@@ -20,21 +17,22 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 // 🔐 Login function
 export async function login(email, password) {
-  return auth.signInWithEmailAndPassword(email, password);
+  return await signInWithEmailAndPassword(auth, email, password);
 }
 
 // 🆕 Signup function
 export async function signup(email, password) {
-  return auth.createUserWithEmailAndPassword(email, password);
+  return await createUserWithEmailAndPassword(auth, email, password);
 }
 
 // 👀 Monitor auth state
 export function monitorAuthState(callback) {
-  auth.onAuthStateChanged(user => {
+  onAuthStateChanged(auth, user => {
     callback(user);
   });
 }
@@ -42,7 +40,7 @@ export function monitorAuthState(callback) {
 // 🚪 Logout function
 export async function logout() {
   try {
-    await auth.signOut();
+    await signOut(auth);
     console.log("Logged out");
   } catch (error) {
     console.error("Logout error:", error.message);
@@ -60,4 +58,4 @@ export async function deleteAccount(user) {
   }
 }
 
-export { auth, db }; // ✅ Export both auth and db
+export { auth, db };
