@@ -114,7 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       try {
-        const credential = firebase.auth.EmailAuthProvider.credential(email, password);
+        import { EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
         await user.reauthenticateWithCredential(credential);
         await deleteAccount(user);
         alert("Your account has been deleted.");
