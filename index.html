@@ -1,50 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- Firebase App (core) -->
-<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
-
-<!-- Firebase Auth -->
-<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth-compat.js"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Supplement Tracker</title>
   <link rel="stylesheet" href="style.css" />
+  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth-compat.js"></script>
   <style>
-    body:not(.logged-in) #appContent {
-      display: none;
-    }
-    body.logged-in #authContainer {
-      display: none;
-    }
-    #authContainer {
-      margin-bottom: 20px;
-    }
-    #logoutBtn {
-      margin-top: 10px;
-    }
-    .modal.hidden {
-      display: none;
-    }
+    body:not(.logged-in) #appContent { display: none; }
+    body.logged-in #authContainer { display: none; }
+    #authContainer { margin-bottom: 20px; }
+    #logoutBtn { margin-top: 10px; }
+    .modal.hidden { display: none; }
   </style>
 </head>
 <body>
- <div id="accountActions">
-  <button id="logoutBtn">Logout</button>
-  <button id="deleteAccountBtn">Delete Account</button>
-</div>
+  <div id="accountActions">
+    <button id="logoutBtn">Logout</button>
+    <button id="deleteAccountBtn">Delete Account</button>
+  </div>
+
   <main>
     <h1>Supplement Tracker</h1>
 
     <!-- 🔐 Auth Section -->
-   <section id="authContainer">
-  <form id="loginForm">
-    <input type="email" id="emailInput" placeholder="Email" required />
-    <input type="password" id="passwordInput" placeholder="Password" required />
-    <button type="submit" id="loginBtn">Login</button>
-    <button type="submit" id="signupBtn">Sign Up</button>
-  </form>
-</section>
+    <section id="authContainer">
+      <form id="loginForm">
+        <input type="email" id="emailInput" placeholder="Email" required />
+        <input type="password" id="passwordInput" placeholder="Password" required />
+        <button type="submit" id="loginBtn">Login</button>
+        <button type="submit" id="signupBtn">Sign Up</button>
+      </form>
+    </section>
 
     <!-- ✅ Main App Content -->
     <section id="appContent">
