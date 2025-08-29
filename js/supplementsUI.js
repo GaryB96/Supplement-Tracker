@@ -85,8 +85,12 @@ async function refreshData() {
     return;
   }
 
-  supplements = await fetchSupplements(currentUser.id);
-  renderSupplements();
+  try {
+    supplements = await fetchSupplements(currentUser.id);
+    renderSupplements();
+  } catch (error) {
+    console.error("❌ Failed to fetch supplements:", error);
+  }
 }
 
 function renderSupplements() {
