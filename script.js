@@ -42,12 +42,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const currentMonthLabel = document.getElementById("currentMonthLabel");
   const prevMonthBtn = document.getElementById("prevMonth");
   const nextMonthBtn = document.getElementById("nextMonth");
-
   const loginForm = document.getElementById("loginForm");
   const emailInput = document.getElementById("emailInput");
   const passwordInput = document.getElementById("passwordInput");
   const logoutBtn = document.getElementById("logoutBtn");
-
   let currentYear = new Date().getFullYear();
   let currentMonth = new Date().getMonth();
 
@@ -63,6 +61,40 @@ document.addEventListener("DOMContentLoaded", () => {
       renderSupplements();
       renderCalendar();
     }
+      // 🔓 Logout logic
+  logoutBtn.addEventListener("click", function () {
+    try {
+      alert("You have been logged out.");
+      window.location.href = "/login"; // Adjust path as needed
+    } catch (error) {
+      console.error("Logout failed:", error);
+      alert("Something went wrong during logout.");
+    }
+  });
+
+  // 🗑️ Delete account logic
+  const deleteAccountBtn = document.getElementById("deleteAccountBtn");
+  const confirmDeleteModal = document.getElementById("confirmDeleteModal");
+  const confirmDeleteYes = document.getElementById("confirmDeleteYes");
+  const confirmDeleteNo = document.getElementById("confirmDeleteNo");
+
+  deleteAccountBtn.addEventListener("click", function () {
+    confirmDeleteModal.classList.remove("hidden");
+  });
+
+  confirmDeleteNo.addEventListener("click", function () {
+    confirmDeleteModal.classList.add("hidden");
+  });
+
+  confirmDeleteYes.addEventListener("click", function () {
+    try {
+      alert("Your account has been deleted.");
+      window.location.href = "/goodbye"; // Adjust path as needed
+    } catch (error) {
+      console.error("Account deletion failed:", error);
+      alert("Something went wrong while deleting your account.");
+    }
+  });
   });
 
   loginForm.addEventListener("submit", async e => {
