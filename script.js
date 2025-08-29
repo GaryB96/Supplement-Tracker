@@ -63,62 +63,68 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function renderCalendar() {
-    calendar.innerHTML = "";
+function renderCalendar() {
+  calendar.innerHTML = "";
 
-    const monthName = new Date(currentYear, currentMonth).toLocaleString("default", { month: "long" });
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    currentMonthLabel.textContent = `${monthName} ${currentYear}`;
+  const monthName = new Date(currentYear, currentMonth).toLocaleString("default", { month: "long" });
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  currentMonthLabel.textContent = `${monthName} ${currentYear}`;
 
-    const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const weekdayRow = document.createElement("div");
-    weekdayRow.className = "weekday-row";
-    weekdays.forEach(day => {
-      const dayCell = document.createElement("div");
-      dayCell.className = "weekday-cell";
-      dayCell.textContent = day;
-      weekdayRow.appendChild(dayCell);
-    });
-    calendar.appendChild(weekdayRow);
+  // WEEKDAY HEADER ROW
+  const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const weekdayRow = document.createElement("div");
+  weekdayRow.className = "weekday-row";
 
-    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-    for (let i = 0; i < firstDay; i++) {
-      const emptyCell = document.createElement("div");
-      emptyCell.className = "day empty";
-    }
+  weekdays.forEach(day => {
+    const dayCell = document.createElement("div");
+    dayCell.className = "weekday-cell";
+    dayCell.textContent = day;
+    weekdayRow.appendChild(dayCell);
+  });
 
-    for (let day = 1; day <= daysInMonth; day++) {
-      const cell = document.createElement("div");
-      cell.className = "day";
+  calendar.appendChild(weekdayRow); // Add weekday names before the grid
 
-      const dayNumber = document.createElement("div");
-      dayNumber.className = "day-number";
-      dayNumber.textContent = day;
-      cell.appendChild(dayNumber);
+  // EMPTY CELLS BEFORE FIRST DAY
+  const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+  for (let i = 0; i < firstDay; i++) {
+    const emptyCell = document.createElement("div");
+    emptyCell.className = "day empty";
+    calendar.appendChild(emptyCell);
+  }
 
-      const highlightsContainer = document.createElement("div");
-      highlightsContainer.className = "highlights-container";
+  // DAY CELLS
+  for (let day = 1; day <= daysInMonth; day++) {
+    const cell = document.createElement("div");
+    cell.className = "day";
 
-      supplements.forEach((supplement, index) => {
-        if (supplement.onCycle) {
-          const cycleLength = supplement.onDays + supplement.offDays;
-          if (cycleLength > 0) {
-            const cycleDay = (day - 1) % cycleLength;
-            if (cycleDay < supplement.onDays) {
-              const highlight = document.createElement("div");
-              highlight.className = "highlight-bar";
-              highlight.style.backgroundColor = getCycleColor(index);
-              highlight.title = supplement.name;
-              highlightsContainer.appendChild(highlight);
-            }
+    const dayNumber = document.createElement("div");
+    dayNumber.className = "day-number";
+    dayNumber.textContent = day;
+    cell.appendChild(dayNumber);
+
+    const highlightsContainer = document.createElement("div");
+    highlightsContainer.className = "highlights-container";
+
+    supplements.forEach((supplement, index) => {
+      if (supplement.onCycle) {
+        const cycleLength = supplement.onDays + supplement.offDays;
+        if (cycleLength > 0) {
+          const cycleDay = (day - 1) % cycleLength;
+          if (cycleDay < supplement.onDays) {
+            const highlight = document.createElement("div");
+            highlight.className = "highlight-bar";
+            highlight.style.backgroundColor = getCycleColor(index);
+            highlight.title = supplement.name;
+            highlightsContainer.appendChild(highlight);
           }
         }
-      });
+      }
+    });
 
-      cell.appendChild(highlightsContainer);
-      calendar.appendChild(cell);
-    }
+    cell.appendChild(highlightsContainer);
+    calendar.appendChild(cell);
   }
+}
 
   function getCycleColor(index) {
     const colors = ["#2196F3", "#FF9800", "#9C27B0", "#E91E63"];
