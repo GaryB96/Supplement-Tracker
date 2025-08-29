@@ -38,7 +38,10 @@ if (form) {
     const onDays = parseInt(document.getElementById("onDaysInput").value) || 0;
     const offDays = parseInt(document.getElementById("offDaysInput").value) || 0;
 
-    const supplement = { name, dosage, time, onCycle, onDays, offDays };
+    // Assign a colorClass if onCycle is true
+    const colorClass = onCycle ? `cycle-color-${(Math.floor(Math.random() * 4) + 1)}` : "";
+
+    const supplement = { name, dosage, time, onCycle, onDays, offDays, colorClass };
 
     try {
       if (editingSupplementId) {
@@ -110,9 +113,9 @@ async function refreshData() {
 
 function renderSupplements() {
   supplementSummaryContainer.innerHTML = "";
-  supplements.forEach((supplement, index) => {
+  supplements.forEach(supplement => {
     const box = document.createElement("div");
-    const cycleClass = supplement.onCycle ? `cycle-color-${(index % 4) + 1}` : "";
+    const cycleClass = supplement.colorClass || "";
     box.className = `supplement-box cycle-strip ${cycleClass}`;
     box.innerHTML = `
       <div><strong>${supplement.name}</strong></div>
