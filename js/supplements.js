@@ -1,4 +1,4 @@
-import { db } from "./auth.js"; // ✅ Updated import path
+import { db } from "./firebaseConfig.js";
 
 import {
   collection,
