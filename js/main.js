@@ -23,7 +23,36 @@ document.addEventListener("DOMContentLoaded", () => {
       labelEl.textContent = "";
     }
   });
+  
+const loginBtn = document.getElementById("loginBtn");
+const signupBtn = document.getElementById("signupBtn");
 
+loginBtn.addEventListener("click", async () => {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  try {
+    await login(email, password);
+    alert("Logged in successfully!");
+    window.location.href = "index.html"; // or wherever you want to go
+  } catch (error) {
+    console.error("Login failed:", error.message);
+    alert("Login failed: " + error.message);
+  }
+});
+
+signupBtn.addEventListener("click", async () => {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  try {
+    await signup(email, password);
+    alert("Account created!");
+    window.location.href = "index.html"; // or wherever you want to go
+  } catch (error) {
+    console.error("Signup failed:", error.message);
+    alert("Signup failed: " + error.message);
+  }
+});
+  
   logoutBtn.addEventListener("click", async () => {
     await logout();
     alert("You have been logged out.");
