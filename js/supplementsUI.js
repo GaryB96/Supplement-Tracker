@@ -1,52 +1,65 @@
-// supplementUI.js
-let currentUser = null;
-window.addEventListener("user-authenticated", async e => {
-  currentUser = e.detail;
-  await refreshData(); // Now safe to call
-});
 import {
   fetchSupplements,
   addSupplement,
   deleteSupplement
 } from "./supplements.js";
 
+let currentUser = null;
+window.addEventListener("user-authenticated", async e => {
+  currentUser = e.detail;
+  await refreshData();
+});
+
 const form = document.getElementById("supplementForm");
 const cycleCheckbox = document.getElementById("cycleCheckbox");
 const cycleDetails = document.getElementById("cycleDetails");
 const supplementSummaryContainer = document.getElementById("supplementSummaryContainer");
-const cancelEditBtn = document.getElementById("cancelEditBtn"); // Optional cancel button
+const cancelEditBtn = document.getElementById("cancelEditBtn");
 
 let supplements = [];
 let editingSupplementId = null;
 
-cycleCheckbox.addEventListener("change", () => {
-  cycleDetails.classList.toggle("hidden", !cycleCheckbox.checked);
-});
+if (cycleCheckbox && cycleDetails) {
+  cycleCheckbox.addEventListener("change", () => {
+    cycleDetails.classList.toggle("hidden", !cycleCheckbox.checked);
+  });
+}
 
-form.addEventListener("submit", async e => {
-  e.preventDefault();
-  if (!currentUser || !currentUser.id) return;
+if (form) {
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    if (!currentUser || !currentUser.uid) return;
 
-  const name = document.getElementById("nameInput").value;
-  const dosage = document.getElementById("dosageInput").value;
-  const timeCheckboxes = document.querySelectorAll(".checkbox-group input[type='checkbox']");
-  const time = Array.from(timeCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
-  const onCycle = cycleCheckbox.checked;
-  const onDays = parseInt(document.getElementById("onDaysInput").value) || 0;
-  const offDays = parseInt(document.getElementById("offDaysInput").value) || 0;
+    const name = document.getElementById("nameInput").value;
+    const dosage = document.getElementById("dosageInput").value;
+    const timeCheckboxes = document.querySelectorAll(".checkbox-group input[type='checkbox']");
+    const time = Array.from(timeCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+    const onCycle = cycleCheckbox?.checked || false;
+    const onDays = parseInt(document.getElementById("onDaysInput").value) || 0;
+    const offDays = parseInt(document.getElementById("offDaysInput").value) || 0;
 
-  const supplement = { name, dosage, time, onCycle, onDays, offDays };
+    const supplement = { name, dosage, time, onCycle, onDays, offDays };
 
-  if (editingSupplementId) {
-    await deleteSupplement(currentUser.id, editingSupplementId);
-    editingSupplementId = null;
-  }
+    try {
+      if (editingSupplementId) {
+        await deleteSupplement(currentUser.uid, editingSupplementId);
+        editingSupplementId = null;
+      }
 
-  await addSupplement(currentUser.id, supplement);
-  form.reset();
-  cycleDetails.classList.add("hidden");
-  await refreshData();
-});
+      await addSupplement(currentUser.uid, supplement);
+      form.reset();
+
+      if (cycleCheckbox) cycleCheckbox.checked = false;
+      if (cycleDetails) cycleDetails.classList.add("hidden");
+      timeCheckboxes.forEach(cb => cb.checked = false);
+      if (cancelEditBtn) cancelEditBtn.classList.add("hidden");
+
+      await refreshData();
+    } catch (error) {
+      console.error("❌ Failed to submit supplement:", error);
+    }
+  });
+}
 
 function editSupplement(id) {
   const supplement = supplements.find(s => s.id === id);
@@ -62,8 +75,8 @@ function editSupplement(id) {
     cb.checked = supplement.time.includes(cb.value);
   });
 
-  cycleCheckbox.checked = supplement.onCycle;
-  cycleDetails.classList.toggle("hidden", !supplement.onCycle);
+  if (cycleCheckbox) cycleCheckbox.checked = supplement.onCycle;
+  if (cycleDetails) cycleDetails.classList.toggle("hidden", !supplement.onCycle);
   document.getElementById("onDaysInput").value = supplement.onDays || "";
   document.getElementById("offDaysInput").value = supplement.offDays || "";
 
@@ -74,19 +87,21 @@ if (cancelEditBtn) {
   cancelEditBtn.addEventListener("click", () => {
     editingSupplementId = null;
     form.reset();
-    cycleDetails.classList.add("hidden");
+    if (cycleCheckbox) cycleCheckbox.checked = false;
+    if (cycleDetails) cycleDetails.classList.add("hidden");
+    document.querySelectorAll(".checkbox-group input[type='checkbox']").forEach(cb => cb.checked = false);
     cancelEditBtn.classList.add("hidden");
   });
 }
 
 async function refreshData() {
-  if (!currentUser || !currentUser.id) {
+  if (!currentUser || !currentUser.uid) {
     console.warn("⛔ currentUser is not ready yet.");
     return;
   }
 
   try {
-    supplements = await fetchSupplements(currentUser.id);
+    supplements = await fetchSupplements(currentUser.uid);
     renderSupplements();
   } catch (error) {
     console.error("❌ Failed to fetch supplements:", error);
@@ -118,7 +133,7 @@ function renderSupplements() {
 
   document.querySelectorAll(".delete-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
-      await deleteSupplement(currentUser.id, btn.dataset.id);
+      await deleteSupplement(currentUser.uid, btn.dataset.id);
       await refreshData();
     });
   });
