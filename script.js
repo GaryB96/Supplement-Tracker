@@ -74,7 +74,7 @@ function renderCalendar() {
   currentMonthLabel.textContent = `${monthName} ${currentYear}`;
 
   // WEEKDAY HEADER ROW
-  const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const weekdays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
   const weekdayRow = document.createElement("div");
   weekdayRow.className = "weekday-row";
 
