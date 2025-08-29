@@ -1,6 +1,9 @@
 // auth.js
 
-// Initialize Firebase
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+
 const firebaseConfig = {
   apiKey: "AIzaSyAOsbsQ77ciIFrzKWqcoNnfg2nx4P7zRqE",
   authDomain: "supplement-tracker-bec8a.firebaseapp.com",
@@ -11,9 +14,11 @@ const firebaseConfig = {
   measurementId: "G-W5ZKYC8MFT"
 };
 
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore(); // ✅ Export Firestore instance
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+export { auth, db };
 
 // 🔐 Login function
 export async function login(email, password) {
