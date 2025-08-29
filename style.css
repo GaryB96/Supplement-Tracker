@@ -156,3 +156,7 @@ form {
     font-size: 14px;
   }
 }
+
+#timeCheckboxes label {
+  margin-right: 10px;
+}
