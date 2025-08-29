@@ -15,7 +15,6 @@ document.addEventListener("DOMContentLoaded", () => {
   monitorAuthState(async user => {
     if (user) {
       document.body.classList.add("logged-in");
-
       const supplements = await fetchSupplements(user.uid);
       const now = new Date();
       renderCalendar(now.getMonth(), now.getFullYear(), supplements, calendarEl, labelEl);
@@ -78,14 +77,43 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // 🧨 Delete account
-  if (deleteAccountBtn) {
-    deleteAccountBtn.addEventListener("click", async () => {
-      const user = auth.currentUser;
-      if (user) {
-        await deleteAccount(user);
-        alert("Your account has been deleted.");
-        window.location.href = "index.html";
-      }
-    });
-  }
-});
+ if (deleteAccountBtn) {
+  const modal = document.getElementById("confirmDeleteModal");
+  const confirmYes = document.getElementById("confirmDeleteYes");
+  const confirmNo = document.getElementById("confirmDeleteNo");
+
+  deleteAccountBtn.addEventListener("click", () => {
+    modal.classList.remove("hidden");
+  });
+
+  confirmNo.addEventListener("click", () => {
+    modal.classList.add("hidden");
+  });
+
+  confirmYes.addEventListener("click", async () => {
+    modal.classList.add("hidden");
+
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const email = user.email;
+    const password = prompt("Please re-enter your password to confirm deletion:");
+
+    if (!password) {
+      alert("Password is required to delete your account.");
+      return;
+    }
+
+    try {
+      const credential = firebase.auth.EmailAuthProvider.credential(email, password);
+      await user.reauthenticateWithCredential(credential);
+
+      await deleteAccount(user);
+      alert("Your account has been deleted.");
+      window.location.href = "index.html";
+    } catch (error) {
+      alert("Account deletion failed: " + error.message);
+      console.error("Delete error:", error);
+    }
+  });
+}
