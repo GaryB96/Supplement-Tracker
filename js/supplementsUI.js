@@ -1,11 +1,18 @@
-import { fetchSupplements, addSupplement, deleteSupplement } from "./supplements.js";
+// supplementUI.js
+import {
+  fetchSupplements,
+  addSupplement,
+  deleteSupplement
+} from "./supplements.js";
 
 const form = document.getElementById("supplementForm");
 const cycleCheckbox = document.getElementById("cycleCheckbox");
 const cycleDetails = document.getElementById("cycleDetails");
 const supplementSummaryContainer = document.getElementById("supplementSummaryContainer");
+const cancelEditBtn = document.getElementById("cancelEditBtn"); // Optional cancel button
 
 let supplements = [];
+let editingSupplementId = null;
 
 cycleCheckbox.addEventListener("change", () => {
   cycleDetails.classList.toggle("hidden", !cycleCheckbox.checked);
@@ -13,7 +20,6 @@ cycleCheckbox.addEventListener("change", () => {
 
 form.addEventListener("submit", async e => {
   e.preventDefault();
-
   if (!currentUser || !currentUser.uid) return;
 
   const name = document.getElementById("nameInput").value;
@@ -25,12 +31,48 @@ form.addEventListener("submit", async e => {
   const offDays = parseInt(document.getElementById("offDaysInput").value) || 0;
 
   const supplement = { name, dosage, time, onCycle, onDays, offDays };
-  await addSupplement(currentUser.uid, supplement);
 
+  if (editingSupplementId) {
+    await deleteSupplement(currentUser.uid, editingSupplementId);
+    editingSupplementId = null;
+  }
+
+  await addSupplement(currentUser.uid, supplement);
   form.reset();
   cycleDetails.classList.add("hidden");
   await refreshData();
 });
+
+function editSupplement(id) {
+  const supplement = supplements.find(s => s.id === id);
+  if (!supplement) return;
+
+  editingSupplementId = id;
+
+  document.getElementById("nameInput").value = supplement.name;
+  document.getElementById("dosageInput").value = supplement.dosage;
+
+  const timeCheckboxes = document.querySelectorAll(".checkbox-group input[type='checkbox']");
+  timeCheckboxes.forEach(cb => {
+    cb.checked = supplement.time.includes(cb.value);
+  });
+
+  cycleCheckbox.checked = supplement.onCycle;
+  cycleDetails.classList.toggle("hidden", !supplement.onCycle);
+  document.getElementById("onDaysInput").value = supplement.onDays || "";
+  document.getElementById("offDaysInput").value = supplement.offDays || "";
+
+  if (cancelEditBtn) cancelEditBtn.classList.remove("hidden");
+}
+
+if (cancelEditBtn) {
+  cancelEditBtn.addEventListener("click", () => {
+    editingSupplementId = null;
+    form.reset();
+    cycleDetails.classList.add("hidden");
+    cancelEditBtn.classList.add("hidden");
+  });
+}
 
 async function refreshData() {
   supplements = await fetchSupplements(currentUser.uid);
@@ -56,41 +98,16 @@ function renderSupplements() {
     supplementSummaryContainer.appendChild(box);
   });
 
+  document.querySelectorAll(".edit-btn").forEach(btn => {
+    btn.addEventListener("click", () => editSupplement(btn.dataset.id));
+  });
+
   document.querySelectorAll(".delete-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
       await deleteSupplement(currentUser.uid, btn.dataset.id);
       await refreshData();
     });
   });
-
-  // You can wire up edit logic here too
 }
 
 refreshData();
-  function getCycleColor(index) {
-    const colors = ["#2196F3", "#FF9800", "#9C27B0", "#E91E63"];
-    return colors[index % colors.length];
-  }
-
-  window.deleteSupplement = async function(id) {
-    await deleteDoc(doc(db, "users", currentUser.uid, "supplements", id));
-    refreshData();
-  };
-
-  window.editSupplement = function(id) {
-    const supplement = supplements.find(s => s.id === id);
-
-    document.getElementById("nameInput").value = supplement.name;
-    document.getElementById("dosageInput").value = supplement.dosage;
-    const timeCheckboxes = document.querySelectorAll(".checkbox-group input[type='checkbox']");
-    timeCheckboxes.forEach(checkbox => {
-      checkbox.checked = supplement.time.includes(checkbox.value);
-    });
-    document.getElementById("cycleCheckbox").checked = supplement.onCycle;
-    document.getElementById("cycleDetails").classList.toggle("hidden", !supplement.onCycle);
-    document.getElementById("onDaysInput").value = supplement.onDays || "";
-    document.getElementById("offDaysInput").value = supplement.offDays || "";
-
-    // Delete old entry before re-saving
-    deleteSupplement(id);
-  };
