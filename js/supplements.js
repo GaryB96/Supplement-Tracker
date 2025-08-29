@@ -1,5 +1,5 @@
-// supplements.js
-import { db } from "./firebaseConfig.js";
+import { db } from "./auth.js"; // ✅ Updated import path
+
 import {
   collection,
   getDocs,
