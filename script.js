@@ -74,9 +74,30 @@ confirmDeleteNo.addEventListener("click", function () {
   confirmDeleteModal.classList.add("hidden");
 });
 
+import {
+  deleteUser,
+  signOut,
+  EmailAuthProvider,
+  reauthenticateWithCredential
+} from "firebase/auth";
+import {
+  getDocs,
+  deleteDoc,
+  doc,
+  collection
+} from "firebase/firestore";
+
 confirmDeleteYes.addEventListener("click", async function () {
   try {
-    // ✅ Step 1: Delete all supplements from Firestore
+    // Step 1: Prompt for password
+    const password = prompt("Please re-enter your password to confirm account deletion:");
+    if (!password) return alert("Account deletion cancelled.");
+
+    // Step 2: Re-authenticate
+    const credential = EmailAuthProvider.credential(currentUser.email, password);
+    await reauthenticateWithCredential(currentUser, credential);
+
+    // Step 3: Delete all supplements
     const supplementsRef = collection(db, "users", currentUser.uid, "supplements");
     const snapshot = await getDocs(supplementsRef);
     const deletePromises = snapshot.docs.map(docSnap =>
@@ -84,19 +105,25 @@ confirmDeleteYes.addEventListener("click", async function () {
     );
     await Promise.all(deletePromises);
 
-    // ✅ Step 2: Delete the user account from Firebase Auth
+    // Step 4: Delete user account
     await deleteUser(currentUser);
 
-    // ✅ Step 3: Sign out and redirect
+    // Step 5: Sign out and redirect
     await signOut(auth);
     alert("Your account has been deleted.");
-    window.location.href = "index.html"; // Adjust path if needed
+    window.location.href = "index.html";
   } catch (error) {
     console.error("Account deletion failed:", error);
-    alert("Something went wrong while deleting your account: " + error.message);
+    if (error.code === "auth/wrong-password") {
+      alert("Incorrect password. Please try again.");
+    } else if (error.code === "auth/requires-recent-login") {
+      alert("Please log in again before deleting your account.");
+    } else {
+      alert("Something went wrong: " + error.message);
+    }
   }
 });
-  });
+});
 
   loginForm.addEventListener("submit", async e => {
     e.preventDefault();
