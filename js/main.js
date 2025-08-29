@@ -47,7 +47,6 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         if (clickedButton === "loginBtn") {
           await login(email, password);
-          alert("Logged in successfully!");
         } else if (clickedButton === "signupBtn") {
           await signup(email, password);
           alert("Account created and logged in!");
