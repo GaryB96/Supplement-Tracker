@@ -153,7 +153,10 @@ function renderCalendar() {
 
     document.getElementById("nameInput").value = supplement.name;
     document.getElementById("dosageInput").value = supplement.dosage;
-    document.getElementById("timeInput").value = supplement.time;
+    const timeCheckboxes = document.querySelectorAll("#timeCheckboxes input[type='checkbox']");
+timeCheckboxes.forEach(checkbox => {
+  checkbox.checked = supplement.time.includes(checkbox.value);
+});
     document.getElementById("cycleCheckbox").checked = supplement.onCycle;
     document.getElementById("cycleDetails").classList.toggle("hidden", !supplement.onCycle);
     document.getElementById("onDaysInput").value = supplement.onDays || "";
