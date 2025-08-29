@@ -4,13 +4,6 @@ import { fetchSupplements } from "./supplements.js";
 
 const auth = firebase.auth();
 
-monitorAuthState(user => {
-  if (user) {
-    const event = new CustomEvent("user-authenticated", { detail: user });
-    window.dispatchEvent(event);
-  }
-});
-
 document.addEventListener("DOMContentLoaded", () => {
   const logoutBtn = document.getElementById("logoutBtn");
   const deleteAccountBtn = document.getElementById("deleteAccountBtn");
@@ -22,6 +15,11 @@ document.addEventListener("DOMContentLoaded", () => {
   monitorAuthState(async user => {
     if (user) {
       document.body.classList.add("logged-in");
+
+      // Dispatch custom event for supplementUI.js
+      const event = new CustomEvent("user-authenticated", { detail: user });
+      window.dispatchEvent(event);
+
       const supplements = await fetchSupplements(user.uid);
       const now = new Date();
       renderCalendar(now.getMonth(), now.getFullYear(), supplements, calendarEl, labelEl);
@@ -83,51 +81,48 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // 🧨 Delete account
-if (deleteAccountBtn) {
-  const modal = document.getElementById("confirmDeleteModal");
-  const confirmYes = document.getElementById("confirmDeleteYes");
-  const confirmNo = document.getElementById("confirmDeleteNo");
+  if (deleteAccountBtn) {
+    const modal = document.getElementById("confirmDeleteModal");
+    const confirmYes = document.getElementById("confirmDeleteYes");
+    const confirmNo = document.getElementById("confirmDeleteNo");
 
-  // Show modal when delete button is clicked
-  deleteAccountBtn.addEventListener("click", () => {
-    console.log("Delete button clicked");
-    modal.classList.remove("hidden");
-  });
+    deleteAccountBtn.addEventListener("click", () => {
+      console.log("Delete button clicked");
+      modal?.classList.remove("hidden");
+    });
 
-  // Hide modal when "No" is clicked
-  confirmNo.addEventListener("click", () => {
-    console.log("Cancel delete");
-    modal.classList.add("hidden");
-  });
+    confirmNo?.addEventListener("click", () => {
+      console.log("Cancel delete");
+      modal?.classList.add("hidden");
+    });
 
-  // Handle "Yes, delete"
-  confirmYes.addEventListener("click", async () => {
-    modal.classList.add("hidden");
+    confirmYes?.addEventListener("click", async () => {
+      modal?.classList.add("hidden");
 
-    const user = auth.currentUser;
-    if (!user) {
-      alert("No user is currently signed in.");
-      return;
-    }
+      const user = auth.currentUser;
+      if (!user) {
+        alert("No user is currently signed in.");
+        return;
+      }
 
-    const email = user.email;
-    const password = prompt("Please re-enter your password to confirm deletion:");
+      const email = user.email;
+      const password = prompt("Please re-enter your password to confirm deletion:");
 
-    if (!password) {
-      alert("Password is required to delete your account.");
-      return;
-    }
+      if (!password) {
+        alert("Password is required to delete your account.");
+        return;
+      }
 
-    try {
-      const credential = firebase.auth.EmailAuthProvider.credential(email, password);
-      await user.reauthenticateWithCredential(credential);
-      await deleteAccount(user);
-      alert("Your account has been deleted.");
-      window.location.href = "index.html";
-    } catch (error) {
-      alert("Account deletion failed: " + error.message);
-      console.error("Delete error:", error);
-    }
-  });
+      try {
+        const credential = firebase.auth.EmailAuthProvider.credential(email, password);
+        await user.reauthenticateWithCredential(credential);
+        await deleteAccount(user);
+        alert("Your account has been deleted.");
+        window.location.href = "index.html";
+      } catch (error) {
+        alert("Account deletion failed: " + error.message);
+        console.error("Delete error:", error);
+      }
+    });
   }
 });
