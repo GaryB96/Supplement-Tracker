@@ -1,4 +1,3 @@
-// main.js
 import { login, signup, logout, deleteAccount, monitorAuthState } from "./auth.js";
 import { renderCalendar } from "./calendar.js";
 import { fetchSupplements } from "./supplements.js";
@@ -34,6 +33,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const email = document.getElementById("emailInput").value;
       const password = document.getElementById("passwordInput").value;
+      const clickedButton = e.submitter?.id;
 
       if (!email || !password) {
         alert("Please enter both email and password.");
@@ -46,27 +46,22 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       try {
-        await login(email, password);
-        alert("Logged in successfully!");
-        window.location.href = "index.html";
-      } catch (loginError) {
-        const errorCode = loginError.code;
-
-        if (errorCode === "auth/wrong-password") {
-          alert("Incorrect password. Please try again.");
-        } else if (errorCode === "auth/user-not-found") {
-          try {
-            await signup(email, password);
-            alert("Account created and logged in!");
-            window.location.href = "index.html";
-          } catch (signupError) {
-            alert("Signup failed: " + signupError.message);
-            console.error("Signup error:", signupError);
-          }
+        if (clickedButton === "loginBtn") {
+          await login(email, password);
+          alert("Logged in successfully!");
+        } else if (clickedButton === "signupBtn") {
+          await signup(email, password);
+          alert("Account created and logged in!");
         } else {
-          alert("Login failed: " + loginError.message);
-          console.error("Login error:", loginError);
+          alert("Unknown action.");
+          return;
         }
+
+        window.location.href = "index.html";
+      } catch (error) {
+        const action = clickedButton === "loginBtn" ? "Login" : "Signup";
+        alert(`${action} failed: ${error.message}`);
+        console.error(`${action} error:`, error);
       }
     });
   } else {
