@@ -57,65 +57,6 @@ form {
 }
 
 /* Calendar layout */
-#calendar {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 5px;
-  margin-top: 20px;
-}
-
-.day {
-  background-color: #fff;
-  border: 1px solid #ddd;
-  min-height: 60px;
-  padding: 5px;
-  position: relative;
-  border-radius: 4px;
-}
-
-.day-number {
-  font-weight: bold;
-}
-
-.month-header {
-  font-size: 1.5em;
-  margin-bottom: 10px;
-}
-
-.weekday-row {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  margin-bottom: 10px;
-  font-weight: bold;
-  text-align: center;
-}
-
-.weekday-cell {
-  padding: 8px;
-  border-bottom: 1px solid #ccc;
-}
-
-/* Highlight stacking for calendar supplement cycles */
-.highlights-container {
-  position: absolute;
-  bottom: 5px;
-  left: 5px;
-  right: 5px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  justify-content: center;
-  align-items: center;
-  z-index: 1;
-}
-
-.highlight-bar {
-  width: 20px;
-  height: 8px;
-  border-radius: 10px;
-  opacity: 0.8;
-}
-
 .calendar-nav {
   display: flex;
   justify-content: center;
@@ -137,4 +78,68 @@ form {
 #currentMonthLabel {
   font-weight: bold;
   font-size: 16px;
+}
+
+/* Weekday header row */
+.weekday-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.weekday-cell {
+  text-align: center;
+  font-weight: bold;
+  padding: 8px;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+}
+
+/* Calendar day grid */
+#calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.day {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  min-height: 60px;
+  padding: 5px;
+  position: relative;
+  border-radius: 4px;
+}
+
+.day-number {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.month-header {
+  font-size: 1.5em;
+  margin-bottom: 10px;
+}
+
+/* Highlight stacking for calendar supplement cycles */
+.highlights-container {
+  position: absolute;
+  bottom: 5px;
+  left: 5px;
+  right: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  justify-content: center;
+  align-items: center;
+  z-index: 1;
+}
+
+.highlight-bar {
+  width: 80%;
+  height: 8px;
+  border-radius: 10px;
+  opacity: 0.8;
 }
