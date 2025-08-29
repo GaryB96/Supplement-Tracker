@@ -123,3 +123,5 @@ if (deleteAccountBtn) {
       console.error("Delete error:", error);
     }
   });
+}
+});
