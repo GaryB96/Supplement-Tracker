@@ -276,3 +276,26 @@ body.logged-in #appContent {
 .hidden {
   display: none;
 }
+#accountActions {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  display: flex;
+  gap: 10px;
+  z-index: 100;
+}
+
+#accountActions button {
+  padding: 10px 20px;
+  font-size: 16px;
+  background: linear-gradient(to right, #4caf50, #81c784);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+#accountActions button:hover {
+  background: linear-gradient(to right, #388e3c, #66bb6a);
+}
