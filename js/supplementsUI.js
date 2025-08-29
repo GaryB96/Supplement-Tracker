@@ -16,7 +16,7 @@ const cycleDetails = document.getElementById("cycleDetails");
 const supplementSummaryContainer = document.getElementById("supplementSummaryContainer");
 const cancelEditBtn = document.getElementById("cancelEditBtn");
 const calendarEl = document.getElementById("calendar");
-const labelEl = document.getElementById("calendarLabel");
+const labelEl = document.getElementById("currentMonthLabel");
 
 window.addEventListener("user-authenticated", async e => {
   currentUser = e.detail;
