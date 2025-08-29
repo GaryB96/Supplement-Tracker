@@ -1,6 +1,19 @@
-// ✅ Firebase setup
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  getDocs,
+  deleteDoc,
+  doc
+} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAOsbsQ77ciIFrzKWqcoNnfg2nx4P7zRqE",
@@ -14,10 +27,12 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
+
+let currentUser = null;
+let supplements = [];
 
 document.addEventListener("DOMContentLoaded", () => {
-  let supplements = [];
-
   const form = document.getElementById("supplementForm");
   const calendar = document.getElementById("calendar");
   const calendarContainer = document.getElementById("calendarContainer");
@@ -28,21 +43,51 @@ document.addEventListener("DOMContentLoaded", () => {
   const prevMonthBtn = document.getElementById("prevMonth");
   const nextMonthBtn = document.getElementById("nextMonth");
 
+  const loginForm = document.getElementById("loginForm");
+  const emailInput = document.getElementById("emailInput");
+  const passwordInput = document.getElementById("passwordInput");
+  const logoutBtn = document.getElementById("logoutBtn");
+
   let currentYear = new Date().getFullYear();
   let currentMonth = new Date().getMonth();
 
-  async function refreshData() {
-    const snapshot = await getDocs(collection(db, "supplements"));
-    supplements = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    renderSupplements();
-    renderCalendar();
-  }
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      currentUser = user;
+      document.body.classList.add("logged-in");
+      refreshData();
+    } else {
+      currentUser = null;
+      document.body.classList.remove("logged-in");
+      supplements = [];
+      renderSupplements();
+      renderCalendar();
+    }
+  });
+
+  loginForm.addEventListener("submit", async e => {
+    e.preventDefault();
+    const email = emailInput.value;
+    const password = passwordInput.value;
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch {
+      await createUserWithEmailAndPassword(auth, email, password);
+    }
+
+    loginForm.reset();
+  });
+
+  logoutBtn.addEventListener("click", () => {
+    signOut(auth);
+  });
 
   cycleCheckbox.addEventListener("change", () => {
     cycleDetails.classList.toggle("hidden", !cycleCheckbox.checked);
   });
 
-  form.addEventListener("submit", async (e) => {
+  form.addEventListener("submit", async e => {
     e.preventDefault();
 
     const name = document.getElementById("nameInput").value;
@@ -56,12 +101,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const offDays = parseInt(document.getElementById("offDaysInput").value) || 0;
 
     const supplement = { name, dosage, time, onCycle, onDays, offDays };
-    await addDoc(collection(db, "supplements"), supplement);
+
+    await addDoc(collection(db, "users", currentUser.uid, "supplements"), supplement);
 
     refreshData();
     form.reset();
     cycleDetails.classList.add("hidden");
   });
+
+  async function refreshData() {
+    const snapshot = await getDocs(collection(db, "users", currentUser.uid, "supplements"));
+    supplements = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    renderSupplements();
+    renderCalendar();
+  }
 
   function renderSupplements() {
     supplementSummaryContainer.innerHTML = "";
@@ -154,7 +207,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   window.deleteSupplement = async function(id) {
-    await deleteDoc(doc(db, "supplements", id));
+    await deleteDoc(doc(db, "users", currentUser.uid, "supplements", id));
     refreshData();
   };
 
@@ -168,31 +221,4 @@ document.addEventListener("DOMContentLoaded", () => {
       checkbox.checked = supplement.time.includes(checkbox.value);
     });
     document.getElementById("cycleCheckbox").checked = supplement.onCycle;
-    document.getElementById("cycleDetails").classList.toggle("hidden", !supplement.onCycle);
-    document.getElementById("onDaysInput").value = supplement.onDays || "";
-    document.getElementById("offDaysInput").value = supplement.offDays || "";
-
-    // Delete old entry before re-saving
-    deleteSupplement(id);
-  };
-
-  prevMonthBtn.addEventListener("click", () => {
-    currentMonth--;
-    if (currentMonth < 0) {
-      currentMonth = 11;
-      currentYear--;
-    }
-    renderCalendar();
-  });
-
-  nextMonthBtn.addEventListener("click", () => {
-    currentMonth++;
-    if (currentMonth > 11) {
-      currentMonth = 0;
-      currentYear++;
-    }
-    renderCalendar();
-  });
-
-  refreshData();
-});
+    document.getElementById("cycleDetails").classList
