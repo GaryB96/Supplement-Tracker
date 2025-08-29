@@ -1,20 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-import {
-  getFirestore,
-  collection,
-  addDoc,
-  getDocs,
-  deleteDoc,
-  doc
-} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
-import {
-  getAuth,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  onAuthStateChanged,
-  signOut
-} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
-
+import {  getFirestore,  collection,  addDoc,  getDocs,  deleteDoc,  doc} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+import {  getAuth,  createUserWithEmailAndPassword,  signInWithEmailAndPassword,  onAuthStateChanged,  signOut} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+import { deleteUser, signOut } from "firebase/auth";
+import { getDocs, deleteDoc, doc, collection } from "firebase/firestore";
 const firebaseConfig = {
   apiKey: "AIzaSyAOsbsQ77ciIFrzKWqcoNnfg2nx4P7zRqE",
   authDomain: "supplement-tracker-bec8a.firebaseapp.com",
@@ -72,29 +60,42 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 🗑️ Delete account logic
-  const deleteAccountBtn = document.getElementById("deleteAccountBtn");
-  const confirmDeleteModal = document.getElementById("confirmDeleteModal");
-  const confirmDeleteYes = document.getElementById("confirmDeleteYes");
-  const confirmDeleteNo = document.getElementById("confirmDeleteNo");
+// 🗑️ Delete account logic
+const deleteAccountBtn = document.getElementById("deleteAccountBtn");
+const confirmDeleteModal = document.getElementById("confirmDeleteModal");
+const confirmDeleteYes = document.getElementById("confirmDeleteYes");
+const confirmDeleteNo = document.getElementById("confirmDeleteNo");
 
-  deleteAccountBtn.addEventListener("click", function () {
-    confirmDeleteModal.classList.remove("hidden");
-  });
+deleteAccountBtn.addEventListener("click", function () {
+  confirmDeleteModal.classList.remove("hidden");
+});
 
-  confirmDeleteNo.addEventListener("click", function () {
-    confirmDeleteModal.classList.add("hidden");
-  });
+confirmDeleteNo.addEventListener("click", function () {
+  confirmDeleteModal.classList.add("hidden");
+});
 
-  confirmDeleteYes.addEventListener("click", function () {
-    try {
-      alert("Your account has been deleted.");
-      window.location.href = "index.html"; // Adjust path as needed
-    } catch (error) {
-      console.error("Account deletion failed:", error);
-      alert("Something went wrong while deleting your account.");
-    }
-  });
+confirmDeleteYes.addEventListener("click", async function () {
+  try {
+    // ✅ Step 1: Delete all supplements from Firestore
+    const supplementsRef = collection(db, "users", currentUser.uid, "supplements");
+    const snapshot = await getDocs(supplementsRef);
+    const deletePromises = snapshot.docs.map(docSnap =>
+      deleteDoc(doc(db, "users", currentUser.uid, "supplements", docSnap.id))
+    );
+    await Promise.all(deletePromises);
+
+    // ✅ Step 2: Delete the user account from Firebase Auth
+    await deleteUser(currentUser);
+
+    // ✅ Step 3: Sign out and redirect
+    await signOut(auth);
+    alert("Your account has been deleted.");
+    window.location.href = "index.html"; // Adjust path if needed
+  } catch (error) {
+    console.error("Account deletion failed:", error);
+    alert("Something went wrong while deleting your account: " + error.message);
+  }
+});
   });
 
   loginForm.addEventListener("submit", async e => {
