@@ -35,23 +35,42 @@ document.addEventListener("DOMContentLoaded", () => {
       const email = document.getElementById("emailInput").value;
       const password = document.getElementById("passwordInput").value;
 
+      if (!email || !password) {
+        alert("Please enter both email and password.");
+        return;
+      }
+
+      if (password.length < 6) {
+        alert("Password must be at least 6 characters long.");
+        return;
+      }
+
       try {
-        // Try logging in first
         await login(email, password);
         alert("Logged in successfully!");
         window.location.href = "index.html";
       } catch (loginError) {
-        // If login fails, try signing up
-        try {
-          await signup(email, password);
-          alert("Account created and logged in!");
-          window.location.href = "index.html";
-        } catch (signupError) {
-          console.error("Auth failed:", signupError.message);
-          alert("Login/Signup failed: " + signupError.message);
+        const errorCode = loginError.code;
+
+        if (errorCode === "auth/wrong-password") {
+          alert("Incorrect password. Please try again.");
+        } else if (errorCode === "auth/user-not-found") {
+          try {
+            await signup(email, password);
+            alert("Account created and logged in!");
+            window.location.href = "index.html";
+          } catch (signupError) {
+            alert("Signup failed: " + signupError.message);
+            console.error("Signup error:", signupError);
+          }
+        } else {
+          alert("Login failed: " + loginError.message);
+          console.error("Login error:", loginError);
         }
       }
     });
+  } else {
+    console.warn("loginForm not found in DOM.");
   }
 
   // 🚪 Logout
