@@ -233,3 +233,16 @@ body.logged-in #appContent {
 #logoutBtn {
   margin-top: 10px;
 }
+.modal {
+  position: fixed;
+  top: 30%;
+  left: 50%;
+  transform: translate(-50%, -30%);
+  background-color: white;
+  padding: 20px;
+  border: 2px solid #333;
+  z-index: 1000;
+}
+.hidden {
+  display: none;
+}
