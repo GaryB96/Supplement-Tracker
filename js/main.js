@@ -4,6 +4,13 @@ import { fetchSupplements } from "./supplements.js";
 
 const auth = firebase.auth();
 
+export let currentUser = null;
+monitorAuthState(user => {
+  if (user) {
+    currentUser = user;
+  }
+});
+
 document.addEventListener("DOMContentLoaded", () => {
   const logoutBtn = document.getElementById("logoutBtn");
   const deleteAccountBtn = document.getElementById("deleteAccountBtn");
