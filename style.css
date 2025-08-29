@@ -195,6 +195,7 @@ form {
   border-radius: 10px;
   opacity: 0.8;
 }
+
 /* Calendar container holds everything stacked vertically */
 #calendar {
   display: flex;
@@ -224,26 +225,17 @@ form {
     font-size: 14px;
   }
 }
+
+/* Auth visibility toggles */
 body.logged-in #authContainer {
   display: none;
 }
+
 body.logged-in #appContent {
   display: block;
 }
-#logoutBtn {
-  margin-top: 10px;
-}
-.modal {
-  position: fixed;
-  top: 30%;
-  left: 50%;
-  transform: translate(-50%, -30%);
-  background-color: white;
-  padding: 20px;
-  border: 2px solid #333;
-  z-index: 1000;
-}
 
+/* Auth form */
 #authForm {
   display: flex;
   flex-direction: column;
@@ -261,7 +253,7 @@ body.logged-in #appContent {
 #authForm button {
   width: 150px;
   padding: 10px;
-  font-size 16px;
+  font-size: 16px;
   background-color: #007bff;
   color: white;
   border: none;
@@ -270,19 +262,19 @@ body.logged-in #appContent {
 }
 
 #authForm button:hover {
-  background-color : #0056b3;
+  background-color: #0056b3;
 }
-  
-.hidden {
-  display: none;
-}
+
+/* Account actions - visible only when logged in */
 #accountActions {
-  position: absolute;
-  top: 20px;
-  left: 20px;
   display: flex;
   gap: 10px;
-  z-index: 100;
+  margin-bottom: 20px;
+  justify-content: flex-start;
+}
+
+body:not(.logged-in) #accountActions {
+  display: none;
 }
 
 #accountActions button {
