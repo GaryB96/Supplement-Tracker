@@ -29,10 +29,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const name = document.getElementById("nameInput").value;
     const dosage = document.getElementById("dosageInput").value;
-const timeCheckboxes = document.querySelectorAll("#timeCheckboxes input[type='checkbox']");
-const time = Array.from(timeCheckboxes)
-  .filter(checkbox => checkbox.checked)
-  .map(checkbox => checkbox.value);
+    const timeCheckboxes = document.querySelectorAll(".checkbox-group input[type='checkbox']");
+    const time = Array.from(timeCheckboxes)
+      .filter(checkbox => checkbox.checked)
+      .map(checkbox => checkbox.value);
     const onCycle = cycleCheckbox.checked;
     const onDays = parseInt(document.getElementById("onDaysInput").value) || 0;
     const offDays = parseInt(document.getElementById("offDaysInput").value) || 0;
