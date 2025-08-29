@@ -221,7 +221,7 @@ document.addEventListener("DOMContentLoaded", () => {
       checkbox.checked = supplement.time.includes(checkbox.value);
     });
     document.getElementById("cycleCheckbox").checked = supplement.onCycle;
-    document.getElementById("cycleDetails").classList
+    document.getElementById("cycleDetails").classList.toggle("hidden", !supplement.onCycle);
     document.getElementById("onDaysInput").value = supplement.onDays || "";
     document.getElementById("offDaysInput").value = supplement.offDays || "";
 
