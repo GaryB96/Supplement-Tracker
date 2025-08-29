@@ -222,3 +222,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     document.getElementById("cycleCheckbox").checked = supplement.onCycle;
     document.getElementById("cycleDetails").classList
+    document.getElementById("onDaysInput").value = supplement.onDays || "";
+    document.getElementById("offDaysInput").value = supplement.offDays || "";
+
+    // Delete old entry before re-saving
+    deleteSupplement(id);
+  };
+
+});
