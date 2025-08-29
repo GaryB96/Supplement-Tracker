@@ -25,7 +25,7 @@ cycleCheckbox.addEventListener("change", () => {
 
 form.addEventListener("submit", async e => {
   e.preventDefault();
-  if (!currentUser || !currentUser.uid) return;
+  if (!currentUser || !currentUser.id) return;
 
   const name = document.getElementById("nameInput").value;
   const dosage = document.getElementById("dosageInput").value;
@@ -38,11 +38,11 @@ form.addEventListener("submit", async e => {
   const supplement = { name, dosage, time, onCycle, onDays, offDays };
 
   if (editingSupplementId) {
-    await deleteSupplement(currentUser.uid, editingSupplementId);
+    await deleteSupplement(currentUser.id, editingSupplementId);
     editingSupplementId = null;
   }
 
-  await addSupplement(currentUser.uid, supplement);
+  await addSupplement(currentUser.id, supplement);
   form.reset();
   cycleDetails.classList.add("hidden");
   await refreshData();
@@ -80,7 +80,7 @@ if (cancelEditBtn) {
 }
 
 async function refreshData() {
-  supplements = await fetchSupplements(currentUser.uid);
+  supplements = await fetchSupplements(currentUser.id);
   renderSupplements();
 }
 
@@ -109,7 +109,7 @@ function renderSupplements() {
 
   document.querySelectorAll(".delete-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
-      await deleteSupplement(currentUser.uid, btn.dataset.id);
+      await deleteSupplement(currentUser.id, btn.dataset.id);
       await refreshData();
     });
   });
