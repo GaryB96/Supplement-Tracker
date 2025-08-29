@@ -77,24 +77,32 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // 🧨 Delete account
- if (deleteAccountBtn) {
+if (deleteAccountBtn) {
   const modal = document.getElementById("confirmDeleteModal");
   const confirmYes = document.getElementById("confirmDeleteYes");
   const confirmNo = document.getElementById("confirmDeleteNo");
 
+  // Show modal when delete button is clicked
   deleteAccountBtn.addEventListener("click", () => {
+    console.log("Delete button clicked");
     modal.classList.remove("hidden");
   });
 
+  // Hide modal when "No" is clicked
   confirmNo.addEventListener("click", () => {
+    console.log("Cancel delete");
     modal.classList.add("hidden");
   });
 
+  // Handle "Yes, delete"
   confirmYes.addEventListener("click", async () => {
     modal.classList.add("hidden");
 
     const user = auth.currentUser;
-    if (!user) return;
+    if (!user) {
+      alert("No user is currently signed in.");
+      return;
+    }
 
     const email = user.email;
     const password = prompt("Please re-enter your password to confirm deletion:");
@@ -107,7 +115,6 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const credential = firebase.auth.EmailAuthProvider.credential(email, password);
       await user.reauthenticateWithCredential(credential);
-
       await deleteAccount(user);
       alert("Your account has been deleted.");
       window.location.href = "index.html";
