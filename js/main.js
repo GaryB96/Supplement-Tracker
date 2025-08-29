@@ -4,31 +4,58 @@ import { fetchSupplements } from "./supplements.js";
 import { EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
 import { auth } from "./firebaseConfig.js";
 
+let currentMonth = new Date().getMonth();
+let currentYear = new Date().getFullYear();
+let supplements = [];
+let currentUser = null;
+
 document.addEventListener("DOMContentLoaded", () => {
   const logoutBtn = document.getElementById("logoutBtn");
   const deleteAccountBtn = document.getElementById("deleteAccountBtn");
   const calendarEl = document.getElementById("calendar");
   const labelEl = document.getElementById("currentMonthLabel");
   const loginForm = document.getElementById("loginForm");
+  const prevBtn = document.getElementById("prevMonth");
+  const nextBtn = document.getElementById("nextMonth");
 
   // 🔐 Monitor auth state
   monitorAuthState(async user => {
     if (user) {
       document.body.classList.add("logged-in");
+      currentUser = user;
 
       // Dispatch custom event for supplementUI.js
       const event = new CustomEvent("user-authenticated", { detail: user });
       window.dispatchEvent(event);
 
-      const supplements = await fetchSupplements(user.uid);
-      const now = new Date();
-      renderCalendar(now.getMonth(), now.getFullYear(), supplements, calendarEl, labelEl);
+      await refreshCalendar();
     } else {
       document.body.classList.remove("logged-in");
       calendarEl.innerHTML = "";
       labelEl.textContent = "";
     }
   });
+
+  // 🔁 Calendar navigation
+  if (prevBtn && nextBtn) {
+    prevBtn.addEventListener("click", async () => {
+      currentMonth--;
+      if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
+      }
+      await refreshCalendar();
+    });
+
+    nextBtn.addEventListener("click", async () => {
+      currentMonth++;
+      if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
+      }
+      await refreshCalendar();
+    });
+  }
 
   // 🔑 Handle login/signup form
   if (loginForm) {
@@ -87,12 +114,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const confirmNo = document.getElementById("confirmDeleteNo");
 
     deleteAccountBtn.addEventListener("click", () => {
-      console.log("Delete button clicked");
       modal?.classList.remove("hidden");
     });
 
     confirmNo?.addEventListener("click", () => {
-      console.log("Cancel delete");
       modal?.classList.add("hidden");
     });
 
@@ -105,15 +130,14 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      const email = user.email;
       const password = prompt("Please re-enter your password to confirm deletion:");
-
       if (!password) {
         alert("Password is required to delete your account.");
         return;
       }
 
       try {
+        const credential = EmailAuthProvider.credential(user.email, password);
         await user.reauthenticateWithCredential(credential);
         await deleteAccount(user);
         alert("Your account has been deleted.");
@@ -125,3 +149,19 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
+// 🌐 Expose calendar refresh globally
+async function refreshCalendar() {
+  if (!currentUser || !currentUser.uid) return;
+
+  try {
+    supplements = await fetchSupplements(currentUser.uid);
+    const calendarEl = document.getElementById("calendar");
+    const labelEl = document.getElementById("currentMonthLabel");
+    renderCalendar(currentMonth, currentYear, supplements, calendarEl, labelEl);
+  } catch (error) {
+    console.error("❌ Failed to fetch supplements for calendar:", error);
+  }
+}
+
+window.refreshCalendar = refreshCalendar;
