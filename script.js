@@ -1,7 +1,16 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
 import {  getFirestore,  collection,  addDoc,  getDocs,  deleteDoc,  doc} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 import {  getAuth,  createUserWithEmailAndPassword,  signInWithEmailAndPassword,  onAuthStateChanged,  signOut} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
-import { deleteUser, signOut } from "firebase/auth";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+  signOut,
+  deleteUser,
+  EmailAuthProvider,
+  reauthenticateWithCredential
+} from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
 import { getDocs, deleteDoc, doc, collection } from "firebase/firestore";
 const firebaseConfig = {
   apiKey: "AIzaSyAOsbsQ77ciIFrzKWqcoNnfg2nx4P7zRqE",
@@ -73,19 +82,6 @@ deleteAccountBtn.addEventListener("click", function () {
 confirmDeleteNo.addEventListener("click", function () {
   confirmDeleteModal.classList.add("hidden");
 });
-
-import {
-  deleteUser,
-  signOut,
-  EmailAuthProvider,
-  reauthenticateWithCredential
-} from "firebase/auth";
-import {
-  getDocs,
-  deleteDoc,
-  doc,
-  collection
-} from "firebase/firestore";
 
 confirmDeleteYes.addEventListener("click", async function () {
   try {
