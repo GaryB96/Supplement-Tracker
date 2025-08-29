@@ -107,6 +107,23 @@ form {
   border-radius: 3px;
 }
 
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.checkbox-group label {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  color: #333;
+  gap: 6px;
+  white-space: nowrap;
+}
+
 /* Calendar navigation */
 .calendar-nav {
   display: flex;
