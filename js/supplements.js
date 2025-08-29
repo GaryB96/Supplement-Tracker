@@ -8,16 +8,39 @@ import {
   doc
 } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
+// Fetch all supplements for a user
 export async function fetchSupplements(userId) {
   const supplementsRef = collection(db, "users", userId, "supplements");
   const snapshot = await getDocs(supplementsRef);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  }));
 }
 
+// Add a new supplement (make sure supplement includes colorClass and date)
 export async function addSupplement(userId, supplement) {
-  return await addDoc(collection(db, "users", userId, "supplements"), supplement);
+  if (!userId || !supplement) {
+    throw new Error("Missing userId or supplement data");
+  }
+
+  return await addDoc(collection(db, "users", userId, "supplements"), {
+    name: supplement.name,
+    dosage: supplement.dosage,
+    time: supplement.time,
+    onCycle: supplement.onCycle,
+    onDays: supplement.onDays,
+    offDays: supplement.offDays,
+    colorClass: supplement.colorClass || "",
+    date: supplement.date || ""
+  });
 }
 
+// Delete a supplement by ID
 export async function deleteSupplement(userId, supplementId) {
+  if (!userId || !supplementId) {
+    throw new Error("Missing userId or supplementId");
+  }
+
   return await deleteDoc(doc(db, "users", userId, "supplements", supplementId));
 }
