@@ -1,5 +1,5 @@
 // main.js
-import { monitorAuthState, logout, deleteAccount } from "./auth.js";
+import { login, signup, logout, deleteAccount, monitorAuthState } from "./auth.js";
 import { renderCalendar } from "./calendar.js";
 import { fetchSupplements } from "./supplements.js";
 import { getAuth } from "firebase/auth";
