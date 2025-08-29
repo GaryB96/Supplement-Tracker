@@ -13,6 +13,7 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
+const db = firebase.firestore(); // ✅ Export Firestore instance
 
 // 🔐 Login function
 export async function login(email, password) {
@@ -51,3 +52,5 @@ export async function deleteAccount(user) {
     alert("Failed to delete account: " + error.message);
   }
 }
+
+export { auth, db }; // ✅ Export both auth and db
