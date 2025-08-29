@@ -269,8 +269,10 @@ body.logged-in #appContent {
 #accountActions {
   display: flex;
   gap: 10px;
-  margin-bottom: 20px;
-  justify-content: flex-start;
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  height: 40px;
 }
 
 body:not(.logged-in) #accountActions {
@@ -278,7 +280,8 @@ body:not(.logged-in) #accountActions {
 }
 
 #accountActions button {
-  padding: 10px 20px;
+  height: 100%;
+  padding: 0 20px;
   font-size: 16px;
   background: linear-gradient(to right, #4caf50, #81c784);
   color: white;
