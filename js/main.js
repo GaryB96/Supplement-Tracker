@@ -4,10 +4,10 @@ import { fetchSupplements } from "./supplements.js";
 
 const auth = firebase.auth();
 
-export let currentUser = null;
 monitorAuthState(user => {
   if (user) {
-    currentUser = user;
+    const event = new CustomEvent("user-authenticated", { detail: user });
+    window.dispatchEvent(event);
   }
 });
 
