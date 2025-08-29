@@ -5,44 +5,71 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Supplement Tracker</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    body:not(.logged-in) #appContent {
+      display: none;
+    }
+    body.logged-in #authContainer {
+      display: none;
+    }
+    #authContainer {
+      margin-bottom: 20px;
+    }
+    #logoutBtn {
+      margin-top: 10px;
+    }
+  </style>
 </head>
 <body>
   <h1>Supplement Tracker</h1>
 
-  <form id="supplementForm">
-    <input id="nameInput" placeholder="Supplement name" required />
-    <input id="dosageInput" placeholder="Dosage (e.g., 500mg)" required />
+  <!-- 🔐 Auth Section -->
+  <div id="authContainer">
+    <form id="loginForm">
+      <input type="email" id="emailInput" placeholder="Email" required />
+      <input type="password" id="passwordInput" placeholder="Password" required />
+      <button type="submit">Login / Sign Up</button>
+    </form>
+    <button id="logoutBtn" style="display:none;">Logout</button>
+  </div>
 
-    <div class="checkbox-group">
-      <label><input type="checkbox" value="Morning" /> Morning</label>
-      <label><input type="checkbox" value="Afternoon" /> Afternoon</label>
-      <label><input type="checkbox" value="Evening" /> Evening</label>
+  <!-- ✅ Main App Content -->
+  <div id="appContent">
+    <form id="supplementForm">
+      <input id="nameInput" placeholder="Supplement name" required />
+      <input id="dosageInput" placeholder="Dosage (e.g., 500mg)" required />
+
+      <div class="checkbox-group">
+        <label><input type="checkbox" value="Morning" /> Morning</label>
+        <label><input type="checkbox" value="Afternoon" /> Afternoon</label>
+        <label><input type="checkbox" value="Evening" /> Evening</label>
+      </div>
+
+      <div class="checkbox-group">
+        <label><input type="checkbox" id="cycleCheckbox" /> On a cycle</label>
+      </div>
+
+      <div id="cycleDetails" class="hidden">
+        <input type="number" id="onDaysInput" placeholder="Days on" />
+        <input type="number" id="offDaysInput" placeholder="Days off" />
+      </div>
+
+      <button type="submit">Add Supplement</button>
+    </form>
+
+    <div id="supplementSummaryContainer" class="summary-container"></div>
+
+    <div id="calendarContainer">
+      <h2>Cycle Calendar</h2>
+
+      <div class="calendar-nav">
+        <button id="prevMonth">◀ Previous</button>
+        <span id="currentMonthLabel"></span>
+        <button id="nextMonth">Next ▶</button>
+      </div>
+
+      <div id="calendar"></div>
     </div>
-
-    <div class="checkbox-group">
-      <label><input type="checkbox" id="cycleCheckbox" /> On a cycle</label>
-    </div>
-
-    <div id="cycleDetails" class="hidden">
-      <input type="number" id="onDaysInput" placeholder="Days on" />
-      <input type="number" id="offDaysInput" placeholder="Days off" />
-    </div>
-
-    <button type="submit">Add Supplement</button>
-  </form>
-
-  <div id="supplementSummaryContainer" class="summary-container"></div>
-
-  <div id="calendarContainer">
-    <h2>Cycle Calendar</h2>
-
-    <div class="calendar-nav">
-      <button id="prevMonth">◀ Previous</button>
-      <span id="currentMonthLabel"></span>
-      <button id="nextMonth">Next ▶</button>
-    </div>
-
-    <div id="calendar"></div>
   </div>
 
   <script type="module" src="script.js"></script>
