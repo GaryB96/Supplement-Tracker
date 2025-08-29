@@ -1,14 +1,3 @@
-// auth.js
-
-import { initializeApp } from "firebase/app";
-import {
-  getAuth,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut
-} from "firebase/auth";
-
 const firebaseConfig = {
   apiKey: "AIzaSyAOsbsQ77ciIFrzKWqcoNnfg2nx4P7zRqE",
   authDomain: "supplement-tracker-bec8a.firebaseapp.com",
@@ -20,7 +9,7 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+firebase.initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
 // 🔐 Login function
