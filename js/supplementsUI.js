@@ -15,8 +15,12 @@ const cycleCheckbox = document.getElementById("cycleCheckbox");
 const cycleDetails = document.getElementById("cycleDetails");
 const supplementSummaryContainer = document.getElementById("supplementSummaryContainer");
 const cancelEditBtn = document.getElementById("cancelEditBtn");
-const calendarEl = document.getElementById("calendar");
-const labelEl = document.getElementById("currentMonthLabel");
+let calendarEl, labelEl;
+
+document.addEventListener("DOMContentLoaded", () => {
+  calendarEl = document.getElementById("calendar");
+  labelEl = document.getElementById("currentMonthLabel");
+});
 
 window.addEventListener("user-authenticated", async e => {
   currentUser = e.detail;
@@ -110,6 +114,10 @@ async function refreshData() {
     supplements = await fetchSupplements(currentUser.uid);
     renderSupplements();
     const today = new Date();
+    if (calendarEl && labelEl) {
+  const today = new Date();
+  renderCalendar(today.getMonth(), today.getFullYear(), supplements, calendarEl, labelEl);
+}
     renderCalendar(today.getMonth(), today.getFullYear(), supplements, calendarEl, labelEl);
   } catch (error) {
     console.error("❌ Failed to fetch supplements:", error);
