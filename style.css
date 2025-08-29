@@ -142,3 +142,10 @@ form {
   border-radius: 10px;
   opacity: 0.8;
 }
+
+/* Grid just for the day squares */
+.days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+}
