@@ -12,16 +12,16 @@
   <form id="supplementForm">
     <input id="nameInput" placeholder="Supplement name" required />
     <input id="dosageInput" placeholder="Dosage (e.g., 500mg)" required />
-<div id="timeCheckboxes">
-  <label><input type="checkbox" value="Morning" /> Morning</label>
-  <label><input type="checkbox" value="Afternoon" /> Afternoon</label>
-  <label><input type="checkbox" value="Evening" /> Evening</label>
-</div>
 
-    <label>
-      <input type="checkbox" id="cycleCheckbox" />
-      On a cycle
-    </label>
+    <div class="checkbox-group">
+      <label><input type="checkbox" value="Morning" /> Morning</label>
+      <label><input type="checkbox" value="Afternoon" /> Afternoon</label>
+      <label><input type="checkbox" value="Evening" /> Evening</label>
+    </div>
+
+    <div class="checkbox-group">
+      <label><input type="checkbox" id="cycleCheckbox" /> On a cycle</label>
+    </div>
 
     <div id="cycleDetails" class="hidden">
       <input type="number" id="onDaysInput" placeholder="Days on" />
