@@ -29,7 +29,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const name = document.getElementById("nameInput").value;
     const dosage = document.getElementById("dosageInput").value;
-    const time = document.getElementById("timeInput").value;
+    const timeSelect = document.getElementById("timeInput");
+    const time = Array.from(timeSelect.selectedOptions).map(opt => opt.value);
     const onCycle = cycleCheckbox.checked;
     const onDays = parseInt(document.getElementById("onDaysInput").value) || 0;
     const offDays = parseInt(document.getElementById("offDaysInput").value) || 0;
@@ -52,7 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
       box.innerHTML = `
         <div><strong>${supplement.name}</strong></div>
         <div>Dosage: ${supplement.dosage}</div>
-        <div>Time: ${supplement.time}</div>
+        <div>Time: ${Array.isArray(supplement.time) ? supplement.time.join(", ") : supplement.time}</div>
         ${supplement.onCycle ? `<div>Cycle: ${supplement.onDays} days on / ${supplement.offDays} days off</div>` : ""}
         <div class="actions">
           <button class="edit-btn" onclick="editSupplement(${index})">Edit</button>
