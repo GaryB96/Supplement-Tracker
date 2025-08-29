@@ -65,7 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
   logoutBtn.addEventListener("click", function () {
     try {
       alert("You have been logged out.");
-      window.location.href = "/index.html"; // Adjust path as needed
+      window.location.href = "./index.html"; // Adjust path as needed
     } catch (error) {
       console.error("Logout failed:", error);
       alert("Something went wrong during logout.");
@@ -89,7 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
   confirmDeleteYes.addEventListener("click", function () {
     try {
       alert("Your account has been deleted.");
-      window.location.href = "/index.html"; // Adjust path as needed
+      window.location.href = "./index.html"; // Adjust path as needed
     } catch (error) {
       console.error("Account deletion failed:", error);
       alert("Something went wrong while deleting your account.");
