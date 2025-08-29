@@ -1,5 +1,3 @@
-// calendar.js
-
 const weekdayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export function renderCalendar(month, year, supplements, calendarEl, labelEl) {
@@ -45,19 +43,20 @@ export function renderCalendar(month, year, supplements, calendarEl, labelEl) {
     numberEl.textContent = day;
     dayEl.appendChild(numberEl);
 
-    const supplementForDay = supplements.find(s => s.date === dateString);
-    if (supplementForDay) {
+    // Get all supplements for this day
+    const supplementsForDay = supplements.filter(s => s.date === dateString);
+    supplementsForDay.forEach(supplement => {
       const supplementEl = document.createElement("div");
       supplementEl.className = "supplement";
-      supplementEl.textContent = supplementForDay.name;
+      supplementEl.textContent = supplement.name;
 
       // Apply cycle color class if available
-      if (supplementForDay.colorClass) {
-        supplementEl.classList.add(supplementForDay.colorClass);
+      if (supplement.colorClass) {
+        supplementEl.classList.add(supplement.colorClass);
       }
 
       dayEl.appendChild(supplementEl);
-    }
+    });
 
     daysGrid.appendChild(dayEl);
   }
