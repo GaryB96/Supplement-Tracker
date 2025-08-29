@@ -2,7 +2,7 @@ const weekdayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export function renderCalendar(month, year, supplements, calendarEl, labelEl) {
   calendarEl.innerHTML = "";
-
+  console.log(supplements)
   const monthName = new Date(year, month).toLocaleString("default", { month: "long" });
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayIndex = new Date(year, month, 1).getDay();
