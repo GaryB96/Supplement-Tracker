@@ -1,5 +1,9 @@
 // supplementUI.js
-console.log("✅ supplementsUI.js loaded");
+const currentUser = {
+  id: "user123",
+  name: "Gary",
+  // Add any other properties your app expects
+};
 import {
   fetchSupplements,
   addSupplement,
