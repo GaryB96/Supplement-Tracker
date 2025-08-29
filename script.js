@@ -1,5 +1,22 @@
+// ✅ Firebase setup
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAOsbsQ77ciIFrzKWqcoNnfg2nx4P7zRqE",
+  authDomain: "supplement-tracker-bec8a.firebaseapp.com",
+  projectId: "supplement-tracker-bec8a",
+  storageBucket: "supplement-tracker-bec8a.appspot.com",
+  messagingSenderId: "394903426941",
+  appId: "1:394903426941:web:be4541048a814346005e14",
+  measurementId: "G-W5ZKYC8MFT"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
 document.addEventListener("DOMContentLoaded", () => {
-  let supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
+  let supplements = [];
 
   const form = document.getElementById("supplementForm");
   const calendar = document.getElementById("calendar");
@@ -14,8 +31,9 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentYear = new Date().getFullYear();
   let currentMonth = new Date().getMonth();
 
-  function refreshData() {
-    supplements = JSON.parse(localStorage.getItem("supplements") || "[]");
+  async function refreshData() {
+    const snapshot = await getDocs(collection(db, "supplements"));
+    supplements = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     renderSupplements();
     renderCalendar();
   }
@@ -24,7 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
     cycleDetails.classList.toggle("hidden", !cycleCheckbox.checked);
   });
 
-  form.addEventListener("submit", (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const name = document.getElementById("nameInput").value;
@@ -38,8 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const offDays = parseInt(document.getElementById("offDaysInput").value) || 0;
 
     const supplement = { name, dosage, time, onCycle, onDays, offDays };
-    supplements.push(supplement);
-    localStorage.setItem("supplements", JSON.stringify(supplements));
+    await addDoc(collection(db, "supplements"), supplement);
 
     refreshData();
     form.reset();
@@ -55,116 +72,108 @@ document.addEventListener("DOMContentLoaded", () => {
       box.innerHTML = `
         <div><strong>${supplement.name}</strong></div>
         <div>Dosage: ${supplement.dosage}</div>
-        <div>Time: ${Array.isArray(supplement.time) ? supplement.time.join(", ") : supplement.time}</div>
+        <div>Time: ${Array.isArray(supplement.time) && supplement.time.length ? supplement.time.join(", ") : "None selected"}</div>
         ${supplement.onCycle ? `<div>Cycle: ${supplement.onDays} days on / ${supplement.offDays} days off</div>` : ""}
         <div class="actions">
-          <button class="edit-btn" onclick="editSupplement(${index})">Edit</button>
-          <button class="delete-btn" onclick="deleteSupplement(${index})">Delete</button>
+          <button class="edit-btn" onclick="editSupplement('${supplement.id}')">Edit</button>
+          <button class="delete-btn" onclick="deleteSupplement('${supplement.id}')">Delete</button>
         </div>
       `;
       supplementSummaryContainer.appendChild(box);
     });
   }
 
-function renderCalendar() {
-  calendar.innerHTML = "";
+  function renderCalendar() {
+    calendar.innerHTML = "";
 
-  const monthName = new Date(currentYear, currentMonth).toLocaleString("default", { month: "long" });
-  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-  currentMonthLabel.textContent = `${monthName} ${currentYear}`;
+    const monthName = new Date(currentYear, currentMonth).toLocaleString("default", { month: "long" });
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    currentMonthLabel.textContent = `${monthName} ${currentYear}`;
 
-  // WEEKDAY HEADER ROW
-  const weekdays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
-  const weekdayRow = document.createElement("div");
-  weekdayRow.className = "weekday-row";
+    const weekdays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+    const weekdayRow = document.createElement("div");
+    weekdayRow.className = "weekday-row";
 
-  weekdays.forEach(day => {
-    const dayCell = document.createElement("div");
-    dayCell.className = "weekday-cell";
-    dayCell.textContent = day;
-    weekdayRow.appendChild(dayCell);
-  });
-
-  // Add weekday row at the top
-  calendar.appendChild(weekdayRow);
-
-  // Create day grid separately
-  const daysGrid = document.createElement("div");
-  daysGrid.className = "days-grid";
-
-  // EMPTY CELLS BEFORE FIRST DAY
-  const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-  for (let i = 0; i < firstDay; i++) {
-    const emptyCell = document.createElement("div");
-    emptyCell.className = "day empty";
-    daysGrid.appendChild(emptyCell);
-  }
-
-  // DAY CELLS
-  for (let day = 1; day <= daysInMonth; day++) {
-    const cell = document.createElement("div");
-    cell.className = "day";
-
-    const dayNumber = document.createElement("div");
-    dayNumber.className = "day-number";
-    dayNumber.textContent = day;
-    cell.appendChild(dayNumber);
-
-    const highlightsContainer = document.createElement("div");
-    highlightsContainer.className = "highlights-container";
-
-    supplements.forEach((supplement, index) => {
-      if (supplement.onCycle) {
-        const cycleLength = supplement.onDays + supplement.offDays;
-        if (cycleLength > 0) {
-          const cycleDay = (day - 1) % cycleLength;
-          if (cycleDay < supplement.onDays) {
-            const highlight = document.createElement("div");
-            highlight.className = "highlight-bar";
-            highlight.style.backgroundColor = getCycleColor(index);
-            highlight.title = supplement.name;
-            highlightsContainer.appendChild(highlight);
-          }
-        }
-      }
+    weekdays.forEach(day => {
+      const dayCell = document.createElement("div");
+      dayCell.className = "weekday-cell";
+      dayCell.textContent = day;
+      weekdayRow.appendChild(dayCell);
     });
 
-    cell.appendChild(highlightsContainer);
-    daysGrid.appendChild(cell);
-  }
+    calendar.appendChild(weekdayRow);
 
-  // Append the days grid under the weekday row
-  calendar.appendChild(daysGrid);
-}
+    const daysGrid = document.createElement("div");
+    daysGrid.className = "days-grid";
+
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    for (let i = 0; i < firstDay; i++) {
+      const emptyCell = document.createElement("div");
+      emptyCell.className = "day empty";
+      daysGrid.appendChild(emptyCell);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const cell = document.createElement("div");
+      cell.className = "day";
+
+      const dayNumber = document.createElement("div");
+      dayNumber.className = "day-number";
+      dayNumber.textContent = day;
+      cell.appendChild(dayNumber);
+
+      const highlightsContainer = document.createElement("div");
+      highlightsContainer.className = "highlights-container";
+
+      supplements.forEach((supplement, index) => {
+        if (supplement.onCycle) {
+          const cycleLength = supplement.onDays + supplement.offDays;
+          if (cycleLength > 0) {
+            const cycleDay = (day - 1) % cycleLength;
+            if (cycleDay < supplement.onDays) {
+              const highlight = document.createElement("div");
+              highlight.className = "highlight-bar";
+              highlight.style.backgroundColor = getCycleColor(index);
+              highlight.title = supplement.name;
+              highlightsContainer.appendChild(highlight);
+            }
+          }
+        }
+      });
+
+      cell.appendChild(highlightsContainer);
+      daysGrid.appendChild(cell);
+    }
+
+    calendar.appendChild(daysGrid);
+  }
 
   function getCycleColor(index) {
     const colors = ["#2196F3", "#FF9800", "#9C27B0", "#E91E63"];
     return colors[index % colors.length];
   }
 
-  window.deleteSupplement = function(index) {
-    supplements.splice(index, 1);
-    localStorage.setItem("supplements", JSON.stringify(supplements));
+  window.deleteSupplement = async function(id) {
+    await deleteDoc(doc(db, "supplements", id));
     refreshData();
   };
 
-  window.editSupplement = function(index) {
-    const supplement = supplements[index];
+  window.editSupplement = function(id) {
+    const supplement = supplements.find(s => s.id === id);
 
     document.getElementById("nameInput").value = supplement.name;
     document.getElementById("dosageInput").value = supplement.dosage;
-    const timeCheckboxes = document.querySelectorAll("#timeCheckboxes input[type='checkbox']");
-timeCheckboxes.forEach(checkbox => {
-  checkbox.checked = supplement.time.includes(checkbox.value);
-});
+    const timeCheckboxes = document.querySelectorAll(".checkbox-group input[type='checkbox']");
+    timeCheckboxes.forEach(checkbox => {
+      checkbox.checked = supplement.time.includes(checkbox.value);
+    });
     document.getElementById("cycleCheckbox").checked = supplement.onCycle;
     document.getElementById("cycleDetails").classList.toggle("hidden", !supplement.onCycle);
     document.getElementById("onDaysInput").value = supplement.onDays || "";
     document.getElementById("offDaysInput").value = supplement.offDays || "";
 
-    supplements.splice(index, 1);
-    localStorage.setItem("supplements", JSON.stringify(supplements));
-    refreshData();
+    // Delete old entry before re-saving
+    deleteSupplement(id);
   };
 
   prevMonthBtn.addEventListener("click", () => {
