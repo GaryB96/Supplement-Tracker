@@ -85,7 +85,6 @@ document.addEventListener("DOMContentLoaded", () => {
     for (let i = 0; i < firstDay; i++) {
       const emptyCell = document.createElement("div");
       emptyCell.className = "day empty";
-      calendar.appendChild(emptyCell);
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
