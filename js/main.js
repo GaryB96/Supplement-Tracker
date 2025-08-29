@@ -1,7 +1,7 @@
 import { login, signup, logout, deleteAccount, monitorAuthState } from "./auth.js";
 import { renderCalendar } from "./calendar.js";
 import { fetchSupplements } from "./supplements.js";
-
+import { EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
 import { auth } from "firebaseConfig.js";
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -114,7 +114,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       try {
-        import { EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
         await user.reauthenticateWithCredential(credential);
         await deleteAccount(user);
         alert("Your account has been deleted.");
