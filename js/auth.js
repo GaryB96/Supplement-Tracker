@@ -16,22 +16,12 @@ const auth = firebase.auth();
 
 // 🔐 Login function
 export async function login(email, password) {
-  return await auth.signInWithEmailAndPassword(email, password);
-}
-
-export async function signup(email, password) {
-  return await auth.createUserWithEmailAndPassword(email, password);
+  return auth.signInWithEmailAndPassword(email, password);
 }
 
 // 🆕 Signup function
 export async function signup(email, password) {
-  try {
-    await auth.createUserWithEmailAndPassword(email, password);
-    console.log("Signup successful");
-  } catch (error) {
-    console.error("Signup error:", error.message);
-    alert("Signup failed: " + error.message);
-  }
+  return auth.createUserWithEmailAndPassword(email, password);
 }
 
 // 👀 Monitor auth state
