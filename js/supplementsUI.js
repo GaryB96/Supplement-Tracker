@@ -4,20 +4,24 @@ import {
   deleteSupplement
 } from "./supplements.js";
 
+import { renderCalendar } from "./calendar.js";
+
 let currentUser = null;
-window.addEventListener("user-authenticated", async e => {
-  currentUser = e.detail;
-  await refreshData();
-});
+let supplements = [];
+let editingSupplementId = null;
 
 const form = document.getElementById("supplementForm");
 const cycleCheckbox = document.getElementById("cycleCheckbox");
 const cycleDetails = document.getElementById("cycleDetails");
 const supplementSummaryContainer = document.getElementById("supplementSummaryContainer");
 const cancelEditBtn = document.getElementById("cancelEditBtn");
+const calendarEl = document.getElementById("calendar");
+const labelEl = document.getElementById("calendarLabel");
 
-let supplements = [];
-let editingSupplementId = null;
+window.addEventListener("user-authenticated", async e => {
+  currentUser = e.detail;
+  await refreshData();
+});
 
 if (cycleCheckbox && cycleDetails) {
   cycleCheckbox.addEventListener("change", () => {
@@ -37,11 +41,10 @@ if (form) {
     const onCycle = cycleCheckbox?.checked || false;
     const onDays = parseInt(document.getElementById("onDaysInput").value) || 0;
     const offDays = parseInt(document.getElementById("offDaysInput").value) || 0;
-
-    // Assign a colorClass if onCycle is true
     const colorClass = onCycle ? `cycle-color-${(Math.floor(Math.random() * 4) + 1)}` : "";
+    const date = new Date().toISOString().split("T")[0]; // Use today's date
 
-    const supplement = { name, dosage, time, onCycle, onDays, offDays, colorClass };
+    const supplement = { name, dosage, time, onCycle, onDays, offDays, colorClass, date };
 
     try {
       if (editingSupplementId) {
@@ -57,7 +60,7 @@ if (form) {
       timeCheckboxes.forEach(cb => cb.checked = false);
       if (cancelEditBtn) cancelEditBtn.classList.add("hidden");
 
-      await refreshData();
+      await refreshData(); // This now also updates the calendar
     } catch (error) {
       console.error("❌ Failed to submit supplement:", error);
     }
@@ -106,6 +109,8 @@ async function refreshData() {
   try {
     supplements = await fetchSupplements(currentUser.uid);
     renderSupplements();
+    const today = new Date();
+    renderCalendar(today.getMonth(), today.getFullYear(), supplements, calendarEl, labelEl);
   } catch (error) {
     console.error("❌ Failed to fetch supplements:", error);
   }
