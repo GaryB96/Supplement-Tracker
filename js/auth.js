@@ -1,24 +1,26 @@
 // auth.js
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyAOsbsQ77ciIFrzKWqcoNnfg2nx4P7zRqE",
   authDomain: "supplement-tracker-bec8a.firebaseapp.com",
   projectId: "supplement-tracker-bec8a",
-  storageBucket: "supplement-tracker-bec8a.appspot.com",
+  storageBucket: "supplement-tracker-bec8a.firebasestorage.app",
   messagingSenderId: "394903426941",
   appId: "1:394903426941:web:be4541048a814346005e14",
   measurementId: "G-W5ZKYC8MFT"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-export { auth, db };
+const analytics = getAnalytics(app);
 
 // 🔐 Login function
 export async function login(email, password) {
