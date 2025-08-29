@@ -286,19 +286,15 @@ body:not(.logged-in) #accountActions {
 }
 
 #accountActions button {
-  white-space: nowrap;
-  box-sizing: border-box;
-}
-
-#accountActions button {
   all: unset;
+  box-sizing: border-box;
+  white-space: nowrap;
   height: 100%;
   padding: 0 20px;
   font-size: 16px;
-  line-height: 1; /* prevents vertical stretching */
+  line-height: 1;
   background: linear-gradient(to right, #4caf50, #81c784);
   color: white;
-  border: none;
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.3s ease;
