@@ -16,6 +16,7 @@ const auth = firebase.auth();
 
 // 🔐 Login function
 export async function login(email, password) {
+  console.log("Login button clicked");
   try {
     await auth.signInWithEmailAndPassword(email, password);
     console.log("Logged in successfully");
