@@ -40,6 +40,7 @@
   <button type="button" id="loginBtn">Login</button>
   <button type="button" id="signupBtn">Sign Up</button>
 </form>
+      <script>
       document.getElementById("loginForm").addEventListener("click", async () => {
   const email = document.getElementById("emailInput").value;
   const password = document.getElementById("passwordInput").value;
@@ -77,6 +78,7 @@ document.getElementById("signupBtn").addEventListener("click", async () => {
     console.error("Signup error:", error);
   }
 });
+      </script>
     </section>
 
     <!-- ✅ Main App Content -->
