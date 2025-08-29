@@ -2,7 +2,7 @@
 import { login, signup, logout, deleteAccount, monitorAuthState } from "./auth.js";
 import { renderCalendar } from "./calendar.js";
 import { fetchSupplements } from "./supplements.js";
-import { getAuth } from "firebase/auth";
+const auth = firebase.auth();
 
 document.addEventListener("DOMContentLoaded", () => {
   const logoutBtn = document.getElementById("logoutBtn");
