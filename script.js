@@ -79,6 +79,8 @@ document.addEventListener("DOMContentLoaded", () => {
       dayCell.textContent = day;
       weekdayRow.appendChild(dayCell);
     });
+
+    calendarContainer.insertBefore(weekdayRow, calendar);
     calendar.appendChild(weekdayRow);
 
     const firstDay = new Date(currentYear, currentMonth, 1).getDay();
