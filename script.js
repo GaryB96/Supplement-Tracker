@@ -82,14 +82,19 @@ function renderCalendar() {
     weekdayRow.appendChild(dayCell);
   });
 
-  calendar.appendChild(weekdayRow); // Add weekday names before the grid
+  // Add weekday row at the top
+  calendar.appendChild(weekdayRow);
+
+  // Create day grid separately
+  const daysGrid = document.createElement("div");
+  daysGrid.className = "days-grid";
 
   // EMPTY CELLS BEFORE FIRST DAY
   const firstDay = new Date(currentYear, currentMonth, 1).getDay();
   for (let i = 0; i < firstDay; i++) {
     const emptyCell = document.createElement("div");
     emptyCell.className = "day empty";
-    calendar.appendChild(emptyCell);
+    daysGrid.appendChild(emptyCell);
   }
 
   // DAY CELLS
@@ -122,8 +127,11 @@ function renderCalendar() {
     });
 
     cell.appendChild(highlightsContainer);
-    calendar.appendChild(cell);
+    daysGrid.appendChild(cell);
   }
+
+  // Append the days grid under the weekday row
+  calendar.appendChild(daysGrid);
 }
 
   function getCycleColor(index) {
