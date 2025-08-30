@@ -1,7 +1,7 @@
 // auth.js
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
 // Firebase configuration
@@ -56,6 +56,15 @@ export async function deleteAccount(user) {
     console.error("Delete error:", error.message);
     alert("Failed to delete account: " + error.message);
   }
+}
+
+// 🔑 Change password
+export async function changePassword(newPassword) {
+  const user = auth.currentUser;
+  if (user) {
+    return await updatePassword(user, newPassword);
+  }
+  throw new Error("No user is currently signed in.");
 }
 
 export { auth, db };

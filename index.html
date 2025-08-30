@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Supplement Tracker</title>
   <link rel="stylesheet" href="style.css" />
-  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore-compat.js"></script>
   <style>
     body:not(.logged-in) #appContent { display: none; }
     body.logged-in #authContainer { display: none; }
@@ -19,6 +20,13 @@
   <div id="accountActions">
     <button id="logoutBtn">Logout</button>
     <button id="deleteAccountBtn">Delete Account</button>
+    <div class="profile-dropdown">
+      <button id="profileBtn">Profile</button>
+      <div id="profileDropdown" class="dropdown-content hidden">
+        <a href="#" id="changePasswordBtn">Change Password</a>
+        <a href="#" id="deleteAccountLink">Delete Account</a>
+      </div>
+    </div>
   </div>
 
   <main>

@@ -1,4 +1,4 @@
-import { login, signup, logout, deleteAccount, monitorAuthState } from "./auth.js";
+import { login, signup, logout, deleteAccount, monitorAuthState, changePassword } from "./auth.js";
 import { renderCalendar } from "./calendar.js";
 import { fetchSupplements } from "./supplements.js";
 import { EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
@@ -16,6 +16,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const loginForm = document.getElementById("loginForm");
   const prevBtn = document.getElementById("prevMonth");
   const nextBtn = document.getElementById("nextMonth");
+  const profileBtn = document.getElementById("profileBtn");
+  const profileDropdown = document.getElementById("profileDropdown");
+  const changePasswordBtn = document.getElementById("changePasswordBtn");
+  const deleteAccountLink = document.getElementById("deleteAccountLink");
 
   monitorAuthState(async user => {
     if (user) {
@@ -141,6 +145,37 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+  
+  // Profile dropdown
+  profileBtn.addEventListener('click', () => {
+    profileDropdown.classList.toggle('hidden');
+  });
+
+  changePasswordBtn.addEventListener('click', async () => {
+    const newPassword = prompt("Enter your new password (must be at least 6 characters long):");
+    if (newPassword && newPassword.length >= 6) {
+      try {
+        await changePassword(newPassword);
+        alert("Password changed successfully.");
+      } catch (error) {
+        alert(`Failed to change password: ${error.message}`);
+      }
+    }
+    profileDropdown.classList.add('hidden');
+  });
+
+  deleteAccountLink.addEventListener('click', () => {
+    const modal = document.getElementById("confirmDeleteModal");
+    modal?.classList.remove("hidden");
+    profileDropdown.classList.add('hidden');
+  });
+
+  // Close dropdown when clicking outside
+  window.addEventListener('click', (event) => {
+    if (!profileBtn.contains(event.target) && !profileDropdown.contains(event.target)) {
+      profileDropdown.classList.add('hidden');
+    }
+  });
 });
 
 // 🔁 Generate all "on" dates for a supplement cycle

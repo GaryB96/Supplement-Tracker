@@ -6,6 +6,10 @@ body {
   color: #333;
 }
 
+main {
+  margin-top: 60px;
+}
+
 h1 {
   text-align: center;
   font-size: 2.5em;
@@ -273,11 +277,57 @@ body.logged-in #appContent {
   position: absolute;
   top: 20px;
   left: 20px;
+  right: 20px;
   display: flex;
   gap: 10px;
   align-items: center;
   height: 40px;
 }
+
+.profile-dropdown {
+  margin-left: auto;
+  position: relative;
+}
+
+#profileBtn {
+  all: unset;
+  box-sizing: border-box;
+  white-space: nowrap;
+  height: 100%;
+  padding: 0 20px;
+  font-size: 16px;
+  line-height: 1;
+  background: #007bff;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#profileBtn:hover {
+  background: #0056b3;
+}
+
+.dropdown-content {
+  position: absolute;
+  right: 0;
+  background-color: #f9f9f9;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  z-index: 1;
+}
+
+.dropdown-content a {
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+}
+
+.dropdown-content a:hover {background-color: #f1f1f1}
 
 body.logged-in #accountActions {
   height: 40px;
