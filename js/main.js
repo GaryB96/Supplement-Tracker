@@ -149,6 +149,11 @@ function generateCycleDates(startDateStr, cycle, endDateStr) {
   let current = new Date(startDateStr);
   const end = new Date(endDateStr);
 
+  if (isNaN(current)) {
+    console.warn("Invalid startDate:", startDateStr);
+    return dates;
+  }
+
   while (current <= end) {
     for (let i = 0; i < cycle.on && current <= end; i++) {
       dates.push(new Date(current));
