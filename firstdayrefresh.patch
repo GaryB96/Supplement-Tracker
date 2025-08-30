@@ -1,0 +1,48 @@
+diff --git a/js/calendar.js b/js/calendar.js
+index 1d2b3c4..5e6f7a8 100644
+--- a/js/calendar.js
++++ b/js/calendar.js
+@@ -31,7 +31,14 @@ export function renderCalendar(month, year, supplements, calendarEl, labelEl) {
+   for (let i = 0; i < startDay; i++) {
+     const emptyCell = document.createElement("div");
+     emptyCell.className = "day";
+     daysGrid.appendChild(emptyCell);
+   }
+ 
+   for (let day = 1; day <= daysInMonth; day++) {
+-    const date = new Date(year, month, day);
+-    const dateString = date.toISOString().split("T")[0];
++    const date = new Date(year, month, day);
++    // Use a LOCAL date string to avoid UTC shifting (which can drop the 1st)
++    // Example: 2025-09-01 should stay 2025-09-01 regardless of timezone.
++    const mm = String(month + 1).padStart(2, "0");
++    const dd = String(day).padStart(2, "0");
++    const dateString = `${year}-${mm}-${dd}`;
+ 
+     const dayEl = document.createElement("div");
+     dayEl.className = "day";
+diff --git a/js/supplementsUI.js b/js/supplementsUI.js
+index a1b2c3d..d4e5f6a 100644
+--- a/js/supplementsUI.js
++++ b/js/supplementsUI.js
+@@ -116,14 +116,15 @@ async function refreshData() {
+   if (!currentUser || !currentUser.uid) {
+     console.warn("⛔ currentUser is not ready yet.");
+     return;
+   }
+ 
+   try {
+     supplements = await fetchSupplements(currentUser.uid);
+     renderSupplements();
+-    const today = new Date();
+-    if (calendarEl && labelEl) {
+-      renderCalendar(today.getMonth(), today.getFullYear(), supplements, calendarEl, labelEl);
+-    }
++    // Render the calendar via the global refresher so cycles are expanded consistently
++    if (typeof window.refreshCalendar === "function") {
++      await window.refreshCalendar();
++    }
+   } catch (error) {
+     console.error("❌ Failed to fetch supplements:", error);
+   }
+ }
