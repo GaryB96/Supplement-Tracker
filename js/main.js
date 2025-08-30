@@ -16,60 +16,52 @@ document.addEventListener("DOMContentLoaded", () => {
   const prevBtn = document.getElementById("prevMonth");
   const nextBtn = document.getElementById("nextMonth");
 
-  // Profile dropdown refs
-  const profileButton = document.getElementById("profileButton");
-  const profileDropdown = document.getElementById("profileDropdown");
-  const resetPasswordLink = document.getElementById("resetPassword");
-  const deleteAccountLink = document.getElementById("deleteAccount");
+// --- Profile dropdown (robust + scoped to the actual container) ---
+const profileButton = document.getElementById("profileButton");
+const dropdownContainer = profileButton ? profileButton.closest(".dropdown") : null;
 
-// --- Robust Profile dropdown handler (event delegation) ---
-const dropdownContainer = document.querySelector('#accountActions .dropdown');
-const menu = document.getElementById('profileDropdown');
+const resetPasswordLink = document.getElementById("resetPassword");
+const deleteAccountLink = document.getElementById("deleteAccount");
 
-if (dropdownContainer && menu) {
-  // Open/close when clicking the button
-  document.addEventListener('click', (e) => {
-    const clickedProfileBtn = e.target.closest('#profileButton');
-    const clickedInsideDropdown = e.target.closest('#accountActions .dropdown');
+if (dropdownContainer && profileButton) {
+  // Toggle open/close on button click
+  profileButton.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropdownContainer.classList.toggle("show");
+  });
 
-    if (clickedProfileBtn) {
-      e.preventDefault();
-      e.stopPropagation();
-      dropdownContainer.classList.toggle('show');
-      return;
-    }
-
-    // Click outside dropdown closes it
-    if (!clickedInsideDropdown) {
-      dropdownContainer.classList.remove('show');
+  // Close when clicking anywhere outside the dropdown
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".dropdown")) {
+      dropdownContainer.classList.remove("show");
     }
   });
-} else {
-  console.warn('Profile dropdown elements not found in DOM.');
 }
 
-  // --- Reset Password (sends email) ---
-  if (resetPasswordLink) {
-    resetPasswordLink.addEventListener("click", async (e) => {
-      e.preventDefault();
-      try {
-        await resetPassword();
-        alert("Password reset email sent (check your inbox).");
-      } catch (err) {
-        console.error("Password reset error:", err);
-        alert("Could not send reset email: " + (err?.message || err));
-      }
-    });
-  }
+// Reset password (send email via your auth.js function)
+if (resetPasswordLink) {
+  resetPasswordLink.addEventListener("click", async (e) => {
+    e.preventDefault();
+    try {
+      await resetPassword();
+      alert("Password reset email sent (check your inbox).");
+    } catch (err) {
+      console.error("Password reset error:", err);
+      alert("Could not send reset email: " + (err?.message || err));
+    }
+  });
+}
 
-  // --- Delete Account (open confirm modal) ---
-  if (deleteAccountLink) {
-    deleteAccountLink.addEventListener("click", (e) => {
-      e.preventDefault();
-      const modal = document.getElementById("confirmDeleteModal");
-      modal?.classList.remove("hidden");
-    });
-  }
+// Open delete confirmation modal from dropdown
+if (deleteAccountLink) {
+  deleteAccountLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    const modal = document.getElementById("confirmDeleteModal");
+    modal?.classList.remove("hidden");
+  });
+}
+
 
   // --- Confirm Delete Modal wiring (uses your existing modal) ---
   const modal = document.getElementById("confirmDeleteModal");
