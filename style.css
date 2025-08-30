@@ -276,22 +276,54 @@ body.logged-in #appContent {
 #accountActions {
   position: absolute;
   top: 20px;
-  left: 20px;
-  right: 20px;
+  right: 20px; /* keep top right */
   display: flex;
   gap: 10px;
   align-items: center;
   height: 40px;
 }
 
+body.logged-in #accountActions {
+  height: 40px;
+  overflow: hidden;
+}
+
+body:not(.logged-in) #accountActions {
+  display: none;
+}
+
+/* Logout and Profile buttons */
+.logout-button,
+.profile-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+}
+
+/* Logout (red) */
+.logout-button {
+  background-color: red;
+  color: white;
+}
+
+.logout-button:hover {
+  background-color: darkred;
+}
+
+/* Profile (blue) */
 .profile-button {
   background-color: blue;
   color: white;
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  position: relative;
+}
+
+.profile-button:hover {
+  background-color: darkblue;
 }
 
 /* Dropdown container */
@@ -328,35 +360,4 @@ body.logged-in #appContent {
 /* Show menu when active */
 .dropdown.show .dropdown-content {
   display: block;
-}
-
-body.logged-in #accountActions {
-  height: 40px;
-  overflow: hidden;
-}
-
-body:not(.logged-in) #accountActions {
-  display: none;
-}
-
-#accountActions button {
-  all: unset;
-  box-sizing: border-box;
-  white-space: nowrap;
-  height: 100%;
-  padding: 0 20px;
-  font-size: 16px;
-  line-height: 1;
-  background: linear-gradient(to right, #4caf50, #81c784);
-  color: white;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-#accountActions button:hover {
-  background: linear-gradient(to right, #388e3c, #66bb6a);
 }
