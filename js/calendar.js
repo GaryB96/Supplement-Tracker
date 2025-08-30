@@ -2,7 +2,6 @@ const weekdayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export function renderCalendar(month, year, supplements, calendarEl, labelEl) {
   calendarEl.innerHTML = "";
-  console.log(supplements)
   const monthName = new Date(year, month).toLocaleString("default", { month: "long" });
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayIndex = new Date(year, month, 1).getDay();
@@ -50,9 +49,14 @@ export function renderCalendar(month, year, supplements, calendarEl, labelEl) {
       supplementEl.className = "supplement";
       supplementEl.textContent = supplement.name;
 
-      // Apply cycle color class if available
-      if (supplement.colorClass) {
-        supplementEl.classList.add(supplement.colorClass);
+      // Apply inline color if available
+      if (supplement.color) {
+        supplementEl.style.backgroundColor = supplement.color;
+        supplementEl.style.color = "#fff";
+        supplementEl.style.padding = "2px 4px";
+        supplementEl.style.borderRadius = "4px";
+        supplementEl.style.marginTop = "2px";
+        supplementEl.style.fontSize = "0.75rem";
       }
 
       dayEl.appendChild(supplementEl);
