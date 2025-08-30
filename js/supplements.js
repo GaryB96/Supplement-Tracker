@@ -28,11 +28,9 @@ export async function addSupplement(userId, supplement) {
     name: supplement.name,
     dosage: supplement.dosage,
     time: supplement.time,
-    onCycle: supplement.onCycle,
-    onDays: supplement.onDays,
-    offDays: supplement.offDays,
-    colorClass: supplement.colorClass || "",
-    date: supplement.date || ""
+    startDate: supplement.startDate || "",         // ✅ NEW
+    cycle: supplement.cycle || { on: 0, off: 0 },  // ✅ NEW
+    color: supplement.color || "#cccccc"           // ✅ NEW
   });
 }
 
