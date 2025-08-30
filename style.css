@@ -374,3 +374,29 @@ body:not(.logged-in) #accountActions {
 .dropdown.show .dropdown-content {
   display: block;
 }
+
+/* --- ENFORCED PROFILE DROPDOWN BEHAVIOR (override any earlier rules) --- */
+#accountActions {
+  overflow: visible;      /* allow dropdown to extend out of the bar */
+  z-index: 1000;          /* keep it above other content */
+}
+
+#accountActions .dropdown {
+  position: relative;     /* anchor for absolute menu */
+}
+
+#accountActions .dropdown-content {
+  display: none !important;   /* hide by default, override anything earlier */
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);      /* place menu below the button */
+  background: #fff;
+  min-width: 180px;
+  border-radius: 6px;
+  box-shadow: 0 8px 16px rgba(0,0,0,.18);
+  z-index: 2000;
+}
+
+#accountActions .dropdown.show .dropdown-content {
+  display: block !important;  /* show only when parent has .show */
+}
