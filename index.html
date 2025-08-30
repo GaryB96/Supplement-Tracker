@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Supplement Tracker</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=9" />
   <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore-compat.js"></script>
@@ -27,7 +27,6 @@
       <a href="#" id="deleteAccount">Delete Account</a>
     </div>
   </div>
-
 </div>
 
   <main>
@@ -55,14 +54,12 @@
         <input id="nameInput" placeholder="Supplement name" required />
         <input id="dosageInput" placeholder="Dosage (e.g., 500mg)" required />
 
-        <div class="checkbox-group">
-          <label><input type="checkbox" value="Morning" /> Morning</label>
-          <label><input type="checkbox" value="Afternoon" /> Afternoon</label>
-          <label><input type="checkbox" value="Evening" /> Evening</label>
-        </div>
-
-        <div class="checkbox-group">
-          <label><input type="checkbox" id="cycleCheckbox" /> On a cycle</label>
+        <!-- Unified checkbox group: desktop = 4 tiles across, mobile = stacked -->
+        <div class="checkbox-tiles">
+          <label class="check-item"><input type="checkbox" value="Morning" /> <span>Morning</span></label>
+          <label class="check-item"><input type="checkbox" value="Afternoon" /> <span>Afternoon</span></label>
+          <label class="check-item"><input type="checkbox" value="Evening" /> <span>Evening</span></label>
+          <label class="check-item"><input type="checkbox" id="cycleCheckbox" /> <span>On a cycle</span></label>
         </div>
 
         <div id="cycleDetails" class="hidden">
