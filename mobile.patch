@@ -1,0 +1,49 @@
+--- a/style.css
++++ b/style.css
+@@
+ #accountActions .dropdown.show .dropdown-content {
+   display: block !important;  /* show only when parent has .show */
+ }
++
++/* --- Mobile-friendly fixes --- */
++
++/* Keep each checkbox + label text together */
++.checkbox-group label {
++  display: inline-flex;
++  align-items: center;
++  gap: 6px;
++  white-space: nowrap;  /* prevents label text from jumping under neighbor */
++}
++
++/* Allow calendar to stay full width and prevent supplements from overflowing */
++#calendar {
++  width: 100%;
++  overflow-x: auto;   /* if needed, scroll instead of squishing */
++}
++
++.day {
++  overflow: hidden;   /* keep content inside box */
++}
++
++/* Supplements inside calendar cells */
++.supplement {
++  display: block;
++  max-width: 100%;
++  overflow: hidden;
++  text-overflow: ellipsis;  /* ... if text is too long */
++  white-space: nowrap;      /* keep in one line */
++  word-break: break-word;
++}
++
++/* On small screens, adjust grid and font size */
++@media (max-width: 600px) {
++  .weekday-row, .days-grid {
++    grid-template-columns: repeat(7, minmax(40px, 1fr));
++  }
++
++  .supplement {
++    font-size: 10px;
++    white-space: normal;   /* allow wrapping instead of ... */
++    word-break: break-word;
++  }
++}
