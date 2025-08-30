@@ -146,37 +146,46 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
   
-  // Profile dropdown
-  profileBtn.addEventListener('click', () => {
-    profileDropdown.classList.toggle('hidden');
+// Profile button dropdown toggle
+const profileButton = document.getElementById("profileButton");
+const profileDropdown = document.getElementById("profileDropdown");
+
+if (profileButton) {
+  // Toggle dropdown when clicking Profile
+  profileButton.addEventListener("click", function (e) {
+    e.stopPropagation(); // prevent closing immediately
+    this.parentElement.classList.toggle("show");
   });
 
-  changePasswordBtn.addEventListener('click', async () => {
-    const newPassword = prompt("Enter your new password (must be at least 6 characters long):");
-    if (newPassword && newPassword.length >= 6) {
-      try {
-        await changePassword(newPassword);
-        alert("Password changed successfully.");
-      } catch (error) {
-        alert(`Failed to change password: ${error.message}`);
-      }
-    }
-    profileDropdown.classList.add('hidden');
-  });
-
-  deleteAccountLink.addEventListener('click', () => {
-    const modal = document.getElementById("confirmDeleteModal");
-    modal?.classList.remove("hidden");
-    profileDropdown.classList.add('hidden');
-  });
-
-  // Close dropdown when clicking outside
-  window.addEventListener('click', (event) => {
-    if (!profileBtn.contains(event.target) && !profileDropdown.contains(event.target)) {
-      profileDropdown.classList.add('hidden');
+  // Close dropdown if clicking outside
+  window.addEventListener("click", function (event) {
+    if (!event.target.matches("#profileButton")) {
+      document.querySelectorAll(".dropdown").forEach(dropdown => {
+        dropdown.classList.remove("show");
+      });
     }
   });
-});
+}
+
+// Handle Reset Password
+const resetPassword = document.getElementById("resetPassword");
+if (resetPassword) {
+  resetPassword.addEventListener("click", function (e) {
+    e.preventDefault();
+    // TODO: implement actual reset password flow
+    alert("Reset Password clicked");
+  });
+}
+
+// Handle Delete Account
+const deleteAccount = document.getElementById("deleteAccount");
+if (deleteAccount) {
+  deleteAccount.addEventListener("click", function (e) {
+    e.preventDefault();
+    // TODO: implement actual delete account flow
+    alert("Delete Account clicked");
+  });
+}
 
 // 🔁 Generate all "on" dates for a supplement cycle
 function generateCycleDates(startDateStr, cycle, endDateStr) {
