@@ -138,14 +138,14 @@ async function refreshData() {
   }
 
   try {
-    supplements = await fetchSupplements(currentUser.uid);
-    renderSupplements();
+supplements = await fetchSupplements(currentUser.uid);
+renderSupplements();
 
-    // Render calendar with current month/year and the latest supplements list
-    const today = new Date();
-    if (calendarEl && labelEl) {
-      renderCalendar(today.getMonth(), today.getFullYear(), supplements, calendarEl, labelEl);
-    }
+// Use the global, expanded render from main.js
+if (typeof window.refreshCalendar === "function") {
+  await window.refreshCalendar();
+}
+
   } catch (error) {
     console.error("❌ Failed to fetch supplements:", error);
   }
