@@ -168,12 +168,11 @@ function generateCycleDates(startDateStr, cycle, endDateStr) {
 // 🌐 Expose calendar refresh globally
 async function refreshCalendar() {
   if (!currentUser || !currentUser.uid) return;
-console.log("Raw supplements:", rawSupplements);
-console.log("Expanded supplements:", expandedSupplements);
   try {
     const rawSupplements = await fetchSupplements(currentUser.uid);
     const expandedSupplements = [];
-
+console.log("Raw supplements:", rawSupplements);
+console.log("Expanded supplements:", expandedSupplements);
     const monthStart = new Date(currentYear, currentMonth, 1);
     const monthEnd = new Date(currentYear, currentMonth, 1);
     monthEnd.setDate(monthEnd.getDate() + 60); // show 60 days ahead
