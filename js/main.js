@@ -189,6 +189,10 @@ function generateCycleDates(startDateStr, cycle, endDateStr) {
     return dates;
   }
 
+  if (cycle && cycle.on === 0 && cycle.off === 0) {
+    return dates;
+  }
+
   while (current <= end) {
     for (let i = 0; i < cycle.on && current <= end; i++) {
       dates.push(new Date(current));
@@ -206,8 +210,7 @@ async function refreshCalendar() {
   try {
     const rawSupplements = await fetchSupplements(currentUser.uid);
     const expandedSupplements = [];
-console.log("Raw supplements:", rawSupplements);
-console.log("Expanded supplements:", expandedSupplements);
+
     const monthStart = new Date(currentYear, currentMonth, 1);
     const monthEnd = new Date(currentYear, currentMonth, 1);
     monthEnd.setDate(monthEnd.getDate() + 60); // show 60 days ahead
