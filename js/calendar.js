@@ -5,7 +5,8 @@ export function renderCalendar(month, year, supplements, calendarEl, labelEl) {
   const monthName = new Date(year, month).toLocaleString("default", { month: "long" });
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayIndex = new Date(year, month, 1).getDay();
-
+  const supplementsContainer = document.createElement("div");
+  supplementsContainer.className = "supplements-container";
   labelEl.textContent = `${monthName} ${year}`;
 
   // Weekday header row
@@ -59,9 +60,9 @@ export function renderCalendar(month, year, supplements, calendarEl, labelEl) {
         supplementEl.style.fontSize = "0.75rem";
       }
 
-      dayEl.appendChild(supplementEl);
+      supplementsContainer.appendChild(supplementEl);
     });
-
+    dayEl.appendChild(supplementsContainer);
     daysGrid.appendChild(dayEl);
   }
 
