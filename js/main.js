@@ -6,7 +6,6 @@ import { auth } from "./firebaseConfig.js";
 
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
-let supplements = [];
 let currentUser = null;
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -18,13 +17,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const prevBtn = document.getElementById("prevMonth");
   const nextBtn = document.getElementById("nextMonth");
 
-  // 🔐 Monitor auth state
   monitorAuthState(async user => {
     if (user) {
       document.body.classList.add("logged-in");
       currentUser = user;
 
-      // Dispatch custom event for supplementUI.js
       const event = new CustomEvent("user-authenticated", { detail: user });
       window.dispatchEvent(event);
 
@@ -36,7 +33,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 🔁 Calendar navigation
   if (prevBtn && nextBtn) {
     prevBtn.addEventListener("click", async () => {
       currentMonth--;
@@ -57,7 +53,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 🔑 Handle login/signup form
   if (loginForm) {
     loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -98,7 +93,6 @@ document.addEventListener("DOMContentLoaded", () => {
     console.warn("loginForm not found in DOM.");
   }
 
-  // 🚪 Logout
   if (logoutBtn) {
     logoutBtn.addEventListener("click", async () => {
       await logout();
@@ -107,7 +101,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 🧨 Delete account
   if (deleteAccountBtn) {
     const modal = document.getElementById("confirmDeleteModal");
     const confirmYes = document.getElementById("confirmDeleteYes");
@@ -150,15 +143,68 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+// 🔁 Generate all "on" dates for a supplement cycle
+function generateCycleDates(startDateStr, cycle, endDateStr) {
+  const dates = [];
+  let current = new Date(startDateStr);
+  const end = new Date(endDateStr);
+
+  while (current <= end) {
+    for (let i = 0; i < cycle.on && current <= end; i++) {
+      dates.push(new Date(current));
+      current.setDate(current.getDate() + 1);
+    }
+    current.setDate(current.getDate() + cycle.off);
+  }
+
+  return dates;
+}
+
 // 🌐 Expose calendar refresh globally
 async function refreshCalendar() {
   if (!currentUser || !currentUser.uid) return;
 
   try {
-    supplements = await fetchSupplements(currentUser.uid);
+    const rawSupplements = await fetchSupplements(currentUser.uid);
+    const expandedSupplements = [];
+
+    const monthStart = new Date(currentYear, currentMonth, 1);
+    const monthEnd = new Date(currentYear, currentMonth + 1, 0);
+
+    for (const supp of rawSupplements) {
+      if (supp.cycle && supp.startDate) {
+        const cycleDates = generateCycleDates(supp.startDate, supp.cycle, monthEnd);
+        for (const date of cycleDates) {
+          if (
+            date.getMonth() === currentMonth &&
+            date.getFullYear() === currentYear
+          ) {
+            expandedSupplements.push({
+              name: supp.name,
+              date: date.toISOString().split("T")[0],
+              color: supp.color || "#cccccc"
+            });
+          }
+        }
+      } else if (supp.date) {
+        // fallback for one-off supplements
+        const date = new Date(supp.date);
+        if (
+          date.getMonth() === currentMonth &&
+          date.getFullYear() === currentYear
+        ) {
+          expandedSupplements.push({
+            name: supp.name,
+            date: supp.date,
+            color: supp.color || "#cccccc"
+          });
+        }
+      }
+    }
+
     const calendarEl = document.getElementById("calendar");
     const labelEl = document.getElementById("currentMonthLabel");
-    renderCalendar(currentMonth, currentYear, supplements, calendarEl, labelEl);
+    renderCalendar(currentMonth, currentYear, expandedSupplements, calendarEl, labelEl);
   } catch (error) {
     console.error("❌ Failed to fetch supplements for calendar:", error);
   }
