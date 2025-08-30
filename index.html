@@ -56,10 +56,10 @@
 
         <!-- Unified checkbox group: desktop = 4 tiles across, mobile = stacked -->
         <div class="checkbox-tiles">
-          <label class="check-item"><input type="checkbox" value="Morning" /> <span>Morning</span></label>
-          <label class="check-item"><input type="checkbox" value="Afternoon" /> <span>Afternoon</span></label>
-          <label class="check-item"><input type="checkbox" value="Evening" /> <span>Evening</span></label>
-          <label class="check-item"><input type="checkbox" id="cycleCheckbox" /> <span>On a cycle</span></label>
+          <label class="check-item"><input type="checkbox" name="time" value="Morning" /> <span>Morning</span></label>
+          <label class="check-item"><input type="checkbox" name="time" value="Afternoon" /> <span>Afternoon</span></label>
+          <label class="check-item"><input type="checkbox" name="time" value="Evening" /> <span>Evening</span></label>
+          <label class="check-item"><input type="checkbox" id="cycleCheckbox" name="cycle" value="1" /> <span>On a cycle</span></label>
         </div>
 
         <div id="cycleDetails" class="hidden">
@@ -86,7 +86,8 @@
     </section>
   </main>
 
-  <script type="module" src="./js/main.js"></script>
-  <script type="module" src="./js/supplementsUI.js"></script>
+  <!-- Use non-module scripts so shared globals (supplements, renderers) work together -->
+<script type="module" src="./js/main.js"></script>
+<script type="module" src="./js/supplementsUI.js"></script>
 </body>
 </html>
