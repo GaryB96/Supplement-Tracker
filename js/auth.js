@@ -67,13 +67,26 @@ export async function changePassword(newPassword) {
   throw new Error("No user is currently signed in.");
 }
 
-// 🔐 Reset password (sends reset email to the signed-in user's email)
+// Make sure this is imported at the top:
+// import { sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+
 export async function resetPassword() {
+  // Prefer the signed-in user's email; fall back to the login form field if visible
   const user = auth.currentUser;
-  if (!user || !user.email) {
-    throw new Error("No signed-in user email found. Please sign in again.");
+  let email = user?.email;
+
+  if (!email) {
+    const input = document.getElementById("emailInput");
+    if (input && input.value) email = input.value.trim();
   }
-  await sendPasswordResetEmail(auth, user.email);
+
+  if (!email) {
+    throw new Error("No email available. Please enter your email in the login form or sign in first.");
+  }
+
+  await sendPasswordResetEmail(auth, email);
+  // If we get here, Firebase accepted the request.
+  // (If the email isn't registered, Firebase intentionally does not reveal that.)
 }
 
 
