@@ -22,19 +22,31 @@ document.addEventListener("DOMContentLoaded", () => {
   const resetPasswordLink = document.getElementById("resetPassword");
   const deleteAccountLink = document.getElementById("deleteAccount");
 
-  // --- Profile dropdown open/close ---
-  if (profileButton) {
-    profileButton.addEventListener("click", (e) => {
-      e.stopPropagation();
-      profileButton.parentElement.classList.toggle("show");
-    });
+// --- Robust Profile dropdown handler (event delegation) ---
+const dropdownContainer = document.querySelector('#accountActions .dropdown');
+const menu = document.getElementById('profileDropdown');
 
-    window.addEventListener("click", (event) => {
-      if (!event.target.matches("#profileButton")) {
-        document.querySelectorAll(".dropdown").forEach(d => d.classList.remove("show"));
-      }
-    });
-  }
+if (dropdownContainer && menu) {
+  // Open/close when clicking the button
+  document.addEventListener('click', (e) => {
+    const clickedProfileBtn = e.target.closest('#profileButton');
+    const clickedInsideDropdown = e.target.closest('#accountActions .dropdown');
+
+    if (clickedProfileBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      dropdownContainer.classList.toggle('show');
+      return;
+    }
+
+    // Click outside dropdown closes it
+    if (!clickedInsideDropdown) {
+      dropdownContainer.classList.remove('show');
+    }
+  });
+} else {
+  console.warn('Profile dropdown elements not found in DOM.');
+}
 
   // --- Reset Password (sends email) ---
   if (resetPasswordLink) {
