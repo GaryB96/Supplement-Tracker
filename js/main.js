@@ -192,31 +192,43 @@ if (deleteAccountLink) {
   }
 });
 
-// 🔁 Generate all "on" dates for a supplement cycle
-function generateCycleDates(startDateStr, cycle, endDateStr) {
+// Helpers to keep everything in LOCAL time (no UTC parsing)
+function parseLocalDate(ymd) {
+  // ymd: "YYYY-MM-DD"
+  const [y, m, d] = ymd.split("-").map(Number);
+  return new Date(y, (m - 1), d); // local midnight
+}
+function toLocalYMD(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+// 🔁 Generate all "on" dates for a supplement cycle (LOCAL dates)
+function generateCycleDates(startDateStr, cycle, endDate) {
   const dates = [];
-  let current = new Date(startDateStr);
-  const end = new Date(endDateStr);
+  if (!startDateStr || !cycle || (cycle.on === 0 && cycle.off === 0)) return dates;
+
+  let current = parseLocalDate(startDateStr);
+  // normalize end to local midnight
+  const end = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
 
   if (isNaN(current)) {
     console.warn("Invalid startDate:", startDateStr);
     return dates;
   }
 
-  if (cycle && cycle.on === 0 && cycle.off === 0) {
-    return dates;
-  }
-
   while (current <= end) {
     for (let i = 0; i < cycle.on && current <= end; i++) {
-      dates.push(new Date(current));
-      current.setDate(current.getDate() + 1);
+      dates.push(new Date(current));              // local midnight
+      current.setDate(current.getDate() + 1);     // advance by 1 day (local)
     }
-    current.setDate(current.getDate() + cycle.off);
+    current.setDate(current.getDate() + cycle.off); // skip off days (local)
   }
-
   return dates;
 }
+
 
 // 🌐 Expose calendar refresh globally
 async function refreshCalendar() {
