@@ -1,14 +1,11 @@
-/* General page styling */
+/* ===== Base ===== */
 body {
   font-family: Arial, sans-serif;
   margin: 20px;
   background-color: #f9f9f9;
   color: #333;
 }
-
-main {
-  margin-top: 60px;
-}
+main { margin-top: 60px; }
 
 h1 {
   text-align: center;
@@ -20,8 +17,8 @@ h1 {
   letter-spacing: 1px;
 }
 
-form input,
-form select {
+form { margin-bottom: 20px; }
+form input, form select {
   display: block;
   width: 100%;
   max-width: 400px;
@@ -30,101 +27,64 @@ form select {
   font-size: 16px;
   border: 1px solid #ccc;
   border-radius: 6px;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: border-color 0.3s ease;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.1);
+  transition: border-color .3s ease;
 }
-
-form input:focus,
-form select:focus {
-  border-color: #4caf50;
-  outline: none;
-}
+form input:focus, form select:focus { border-color: #4caf50; outline: none; }
 
 form button[type="submit"] {
   display: block;
   margin: 20px auto;
   padding: 10px 20px;
   font-size: 16px;
-  background: linear-gradient(to right, #4caf50, #81c784);
-  color: white;
+  background: linear-gradient(90deg, #4caf50, #81c784);
+  color: #fff;
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  transition: background 0.3s ease;
+  transition: background .3s ease;
 }
+form button[type="submit"]:hover { background: linear-gradient(90deg, #388e3c, #66bb6a); }
 
-form button[type="submit"]:hover {
-  background: linear-gradient(to right, #388e3c, #66bb6a);
-}
+.hidden { display: none; }
 
-form {
-  margin-bottom: 20px;
-}
+/* ===== Summary Cards ===== */
+.supplement-box { border:1px solid #ccc; padding:10px; margin-bottom:10px; background:#fff; border-radius:5px; }
+.cycle-strip { border-left:8px solid transparent; }
+.cycle-color-1 { border-left-color:#2196F3; }
+.cycle-color-2 { border-left-color:#FF9800; }
+.cycle-color-3 { border-left-color:#9C27B0; }
+.cycle-color-4 { border-left-color:#E91E63; }
+.actions { margin-top: 10px; }
+.edit-btn { background:#4caf50; color:#fff; border:none; padding:4px 8px; margin-right:4px; cursor:pointer; border-radius:3px; }
+.delete-btn { background:#f44336; color:#fff; border:none; padding:4px 8px; cursor:pointer; border-radius:3px; }
 
-.hidden {
-  display: none;
-}
-
-/* Supplement summary boxes */
-.supplement-box {
-  border: 1px solid #ccc;
-  padding: 10px;
-  margin-bottom: 10px;
-  background-color: #fff;
-  border-radius: 5px;
-}
-
-.cycle-strip {
-  border-left: 8px solid transparent;
-}
-
-.cycle-color-1 { border-left-color: #2196F3; }
-.cycle-color-2 { border-left-color: #FF9800; }
-.cycle-color-3 { border-left-color: #9C27B0; }
-.cycle-color-4 { border-left-color: #E91E63; }
-
-.actions {
-  margin-top: 10px;
-}
-
-/* Buttons */
-.edit-btn {
-  background: #4caf50;
-  color: white;
-  border: none;
-  padding: 4px 8px;
-  margin-right: 4px;
-  cursor: pointer;
-  border-radius: 3px;
-}
-
-.delete-btn {
-  background: #f44336;
-  color: white;
-  border: none;
-  padding: 4px 8px;
-  cursor: pointer;
-  border-radius: 3px;
-}
-
-.checkbox-group {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 15px;
+/* ===== Checkbox tiles ===== */
+.checkbox-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(140px, 1fr)); /* even spacing on desktop */
+  column-gap: 24px;
+  row-gap: 12px;
+  align-items: center;
   margin: 20px 0;
 }
-
-.checkbox-group label {
-  display: flex;
-  align-items: center;
-  font-size: 16px;
-  color: #333;
-  gap: 6px;
-  white-space: nowrap;
+.check-item input[type="checkbox"] {
+  width: 16px;       /* fixed box size */
+  height: 16px;
+  margin: 0;         /* no extra left/right margin */
+  flex-shrink: 0;    /* don't let it collapse */
 }
 
-/* Calendar navigation */
+@media (max-width: 640px) {
+  .checkbox-tiles {
+    grid-template-columns: 1fr;  /* stacked on mobile */
+    column-gap: 0;
+    row-gap: 10px;
+    justify-items: start;
+  }
+}
+
+/* ===== Calendar ===== */
 .calendar-nav {
   display: flex;
   justify-content: center;
@@ -132,7 +92,6 @@ form {
   gap: 10px;
   margin-bottom: 10px;
 }
-
 .calendar-nav button {
   padding: 6px 12px;
   font-size: 14px;
@@ -140,29 +99,23 @@ form {
   border-radius: 4px;
   border: none;
   background-color: #2196F3;
-  color: white;
+  color: #fff;
 }
+#currentMonthLabel { font-weight: 700; font-size: 16px; }
 
-#currentMonthLabel {
-  font-weight: bold;
-  font-size: 16px;
-}
-
-/* Calendar layout */
 #calendar {
   display: flex;
   flex-direction: column;
   gap: 10px;
   margin-top: 20px;
+  width: 100%;
+  overflow-x: auto; /* let it scroll if constrained */
 }
-
-.weekday-row,
-.days-grid {
+.weekday-row, .days-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 5px;
 }
-
 .weekday-cell {
   text-align: center;
   font-weight: bold;
@@ -171,8 +124,6 @@ form {
   border-radius: 4px;
   font-size: 14px;
 }
-
-/* Day cell styling */
 .day {
   background-color: #fff;
   border: 1px solid #ddd;
@@ -184,121 +135,63 @@ form {
   flex-direction: column;
   justify-content: flex-start;
   align-items: flex-start;
+  overflow: hidden; /* ensure content stays inside */
 }
+.day-number { font-weight: bold; margin-bottom: 4px; font-size: 14px; }
 
-.day-number {
-  font-weight: bold;
-  margin-bottom: 4px;
-  font-size: 14px;
-}
-
-/* Supplement styling */
+/* calendar "event" tag */
 .supplement {
   margin-top: 4px;
   padding: 4px 6px;
   font-size: 12px;
   border-radius: 4px;
-  color: white;
-  font-weight: bold;
+  color: #fff;
+  font-weight: 700;
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  word-break: break-word;
 }
-
-/* Cycle color classes for calendar */
 .cycle-color-1 { background-color: #2196F3; }
 .cycle-color-2 { background-color: #FF9800; }
 .cycle-color-3 { background-color: #9C27B0; }
 .cycle-color-4 { background-color: #E91E63; }
 
-/* Responsive tweaks */
 @media (max-width: 600px) {
-  .weekday-row, .days-grid {
-    grid-template-columns: repeat(7, minmax(30px, 1fr));
-  }
-
-  .calendar-nav {
-    flex-direction: column;
-    gap: 5px;
-  }
-
-  .supplement-box {
-    font-size: 14px;
-  }
-
-  .day {
-    min-height: 60px;
-    font-size: 12px;
-  }
-
-  .supplement {
-    font-size: 10px;
-  }
+  .weekday-row, .days-grid { grid-template-columns: repeat(7, minmax(40px, 1fr)); }
+  .calendar-nav { flex-direction: column; gap: 5px; }
+  .supplement-box { font-size: 14px; }
+  .day { min-height: 60px; font-size: 12px; }
+  .supplement { font-size: 10px; white-space: normal; word-break: break-word; }
 }
 
-/* Auth visibility toggles */
-body.logged-in #authContainer {
-  display: none;
-}
+/* ===== Auth Visibility ===== */
+body.logged-in #authContainer { display: none; }
+body.logged-in #appContent { display: block; }
 
-body.logged-in #appContent {
-  display: block;
-}
+/* ===== Auth Form ===== */
+#authForm { display:flex; flex-direction:column; align-items:center; gap:10px; margin-top:50px; }
+#authForm input { width:250px; padding:10px; font-size:16px; }
+#authForm button { width:150px; padding:10px; font-size:16px; background:#007bff; color:#fff; border:none; border-radius:5px; cursor:pointer; }
+#authForm button:hover { background:#0056b3; }
 
-/* Auth form */
-#authForm {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  margin-top: 50px;
-}
-
-#authForm input {
-  width: 250px;
-  padding: 10px;
-  font-size: 16px;
-}
-
-#authForm button {
-  width: 150px;
-  padding: 10px;
-  font-size: 16px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-#authForm button:hover {
-  background-color: #0056b3;
-}
-
-/* Account actions */
+/* ===== Account Actions & Dropdown ===== */
 #accountActions {
   position: absolute;
   top: 20px;
-  right: 20px; /* keep top right */
+  right: 20px;
   display: flex;
   gap: 10px;
   align-items: center;
   height: 40px;
+  overflow: visible;  /* allow dropdown to overflow */
+  z-index: 1000;
 }
+body:not(.logged-in) #accountActions { display: none; }
 
-body.logged-in #accountActions {
-  height: 40px;
-  overflow: hidden;
-}
-body.logged-in #accountActions {
-  height : 40px;
-  overflow: visible;
-}
-
-body:not(.logged-in) #accountActions {
-  display: none;
-}
-
-/* Logout and Profile buttons */
-.logout-button,
-.profile-button {
+.logout-button, .profile-button {
   padding: 8px 16px;
   border: none;
   border-radius: 6px;
@@ -309,136 +202,46 @@ body:not(.logged-in) #accountActions {
   justify-content: center;
   height: 40px;
 }
+.logout-button { background: rgb(247,102,102); color:#fff; }
+.logout-button:hover { background:#b43636; }
+.profile-button { background: rgb(89,89,250); color:#fff; }
+.profile-button:hover { background:#2c3aa0; }
 
-/* Logout (red) */
-.logout-button {
-  background-color: rgb(247, 102, 102);
-  color: white;
-}
-
-.logout-button:hover {
-  background-color: darkred;
-}
-
-/* Profile (blue) */
-.profile-button {
-  background-color: rgb(89, 89, 250);
-  color: white;
-}
-
-.profile-button:hover {
-  background-color: darkblue;
-}
-
-/* Dropdown container */
-.dropdown {
-  position: relative;
-  display: inline-block;
-}
-
-/* Dropdown content (hidden by default) */
+.dropdown { position: relative; display: inline-block; }
 .dropdown-content {
--  display: none;
--  position: absolute;
--  right: 0;
--  background-color: white;
--  min-width: 160px;
--  box-shadow: 0px 8px 16px rgba(0,0,0,0.2);
--  border-radius: 4px;
--  z-index: 1;
-+  display: none;
-+  position: absolute;
-+  right: 0;
-+  top: calc(100% + 6px);         /* place menu under the button */
-+  background-color: white;
-+  min-width: 160px;
-+  box-shadow: 0px 8px 16px rgba(0,0,0,0.2);
-+  border-radius: 4px;
-+  z-index: 1000;                 /* ensure it’s above other UI */
-}
-
-/* Links inside dropdown */
-.dropdown-content a {
-  color: black;
-  padding: 12px 16px;
-  text-decoration: none;
-  display: block;
-}
-
-/* Hover effect */
-.dropdown-content a:hover {
-  background-color: #f1f1f1;
-}
-
-/* Show menu when active */
-.dropdown.show .dropdown-content {
-  display: block;
-}
-
-/* --- ENFORCED PROFILE DROPDOWN BEHAVIOR (override any earlier rules) --- */
-#accountActions {
-  overflow: visible;      /* allow dropdown to extend out of the bar */
-  z-index: 1000;          /* keep it above other content */
-}
-
-#accountActions .dropdown {
-  position: relative;     /* anchor for absolute menu */
-}
-
-#accountActions .dropdown-content {
-  display: none !important;   /* hide by default, override anything earlier */
+  display: none;
   position: absolute;
   right: 0;
-  top: calc(100% + 6px);      /* place menu below the button */
+  top: calc(100% + 6px);
   background: #fff;
-  min-width: 180px;
+  min-width: 160px;
+  box-shadow: 0 8px 16px rgba(0,0,0,.2);
   border-radius: 6px;
-  box-shadow: 0 8px 16px rgba(0,0,0,.18);
   z-index: 2000;
 }
-
-#accountActions .dropdown.show .dropdown-content {
-  display: block !important;  /* show only when parent has .show */
-}
-/* --- Mobile-friendly fixes --- */
-
-/* Keep each checkbox + label text together */
-.checkbox-group label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;  /* prevents label text from jumping under neighbor */
-}
-
-/* Allow calendar to stay full width and prevent supplements from overflowing */
-#calendar {
-  width: 100%;
-  overflow-x: auto;   /* if needed, scroll instead of squishing */
+.dropdown-content a { color:#000; padding:12px 16px; text-decoration:none; display:block; }
+.dropdown-content a:hover { background:#f1f1f1; }
+.dropdown.show .dropdown-content { display: block; }
+/* Summary group headings */
+.summary-group-title {
+  margin: 24px 0 8px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #444;
+  border-bottom: 1px solid #e5e5e5;
+  padding-bottom: 4px;
 }
 
-.day {
-  overflow: hidden;   /* keep content inside box */
+/* Space between individual summary tiles */
+.supplement-box + .supplement-box {
+  margin-top: 8px;
 }
-
-/* Supplements inside calendar cells */
-.supplement {
-  display: block;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;  /* ... if text is too long */
-  white-space: nowrap;      /* keep in one line */
-  word-break: break-word;
-}
-
-/* On small screens, adjust grid and font size */
-@media (max-width: 600px) {
-  .weekday-row, .days-grid {
-    grid-template-columns: repeat(7, minmax(40px, 1fr));
-  }
-
-  .supplement {
-    font-size: 10px;
-    white-space: normal;   /* allow wrapping instead of ... */
-    word-break: break-word;
-  }
+/* Supplement summary group headings */
+.summary-group-title {
+  margin: 24px 0 8px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #444;
+  border-bottom: 1px solid #e5e5e5;
+  padding-bottom: 4px;
 }

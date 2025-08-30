@@ -151,145 +151,24 @@ if (typeof window.refreshCalendar === "function") {
   }
 }
 
-
 function renderSupplements() {
-  // Clear container
   supplementSummaryContainer.innerHTML = "";
 
-  // Normalize helpers
-  const norm = (v) => (typeof v === "string" ? v.trim().toLowerCase() : "");
-  const toDisplay = (v) => (typeof v === "string" && v.length ? v[0].toUpperCase() + v.slice(1) : "");
+  supplements.forEach(supplement => {
+    const box = document.createElement("div");
+    box.className = `supplement-box cycle-strip`;
+    box.style.borderLeftColor = supplement.color || "#cccccc";
 
-  // Group order and bags
-  const GROUP_ORDER = ["Morning", "Afternoon", "Evening", "Unscheduled"];
-  const groups = { Morning: [], Afternoon: [], Evening: [], Unscheduled: [] };
+    // Only show cycle when it's actually provided and > 0
+    const hasCycle =
+      supplement.cycle &&
+      (Number(supplement.cycle.on) > 0 || Number(supplement.cycle.off) > 0);
 
-  // Expand supplements into groups (duplicate across multiple selected times)
-  (supplements || []).forEach((supplement) => {
-    const times = Array.isArray(supplement && supplement.time) ? supplement.time : [];
-    const normalized = times
-      .map(norm)
-      .map((t) =>
-        t.startsWith("m") ? "morning" :
-        t.startsWith("a") ? "afternoon" :
-        t.startsWith("e") ? "evening" :
-        ""
-      )
-      .filter(Boolean);
-
-    if (normalized.length === 0) {
-      groups.Unscheduled.push(supplement);
-    } else {
-      normalized.forEach((t) => {
-        const key = toDisplay(t); // "morning" -> "Morning"
-        if (groups[key]) groups[key].push(supplement);
-        else groups.Unscheduled.push(supplement);
-      });
-    }
-  });
-
-  // If no items ended up in any group, fall back to flat list
-  const totalCount = GROUP_ORDER.reduce((n, k) => n + (groups[k] ? groups[k].length : 0), 0);
-  if (totalCount === 0) {
-    (supplements || []).forEach((supplement) => {
-      const box = document.createElement("div");
-      box.className = "supplement-box cycle-strip";
-      box.style.borderLeftColor = (supplement && supplement.color) || "#cccccc";
-
-      const c = (supplement && supplement.cycle) || {};
-      const hasCycle =
-        (typeof c["on"] !== "undefined" && Number(c["on"]) > 0) ||
-        (typeof c["off"] !== "undefined" && Number(c["off"]) > 0);
-
-      const timesText = Array.isArray(supplement && supplement.time) && supplement.time.length
-        ? supplement.time.join(", ")
-        : "None selected";
-
-      const cycleInfo = hasCycle
-        ? '<div>Cycle: ' + Number(c["on"]) + ' days on / ' + Number(c["off"]) + ' days off</div>'
-        : "";
-
-      box.innerHTML = ''
-        + '<div><strong>' + (supplement && supplement.name ? supplement.name : "") + '</strong></div>'
-        + '<div>Dosage: ' + (supplement && supplement.dosage ? supplement.dosage : "") + '</div>'
-        + '<div>Time: ' + timesText + '</div>'
-        + cycleInfo
-        + '<div class="actions">'
-        +   '<button class="edit-btn" data-id="' + (supplement && supplement.id ? supplement.id : "") + '">Edit</button>'
-        +   '<button class="delete-btn" data-id="' + (supplement && supplement.id ? supplement.id : "") + '">Delete</button>'
-        + '</div>';
-
-      supplementSummaryContainer.appendChild(box);
-    });
-
-    // Wire up actions
-    document.querySelectorAll(".edit-btn").forEach((btn) => {
-      btn.addEventListener("click", () => editSupplement(btn.dataset.id));
-    });
-    document.querySelectorAll(".delete-btn").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        await deleteSupplement(currentUser && currentUser.uid, btn.dataset.id);
-        await refreshData();
-        if (typeof window.refreshCalendar === "function") await window.refreshCalendar();
-      });
-    });
-    return;
-  }
-
-  // Otherwise render grouped sections in fixed order
-  GROUP_ORDER.forEach((time) => {
-    const arr = groups[time];
-    if (!arr || arr.length === 0) return;
-
-    const header = document.createElement("div");
-    header.className = "summary-group-title";
-    header.textContent = time;
-    supplementSummaryContainer.appendChild(header);
-
-    arr.forEach((supplement) => {
-      const box = document.createElement("div");
-      box.className = "supplement-box cycle-strip";
-      box.style.borderLeftColor = (supplement && supplement.color) || "#cccccc";
-
-      const c = (supplement && supplement.cycle) || {};
-      const hasCycle =
-        (typeof c["on"] !== "undefined" && Number(c["on"]) > 0) ||
-        (typeof c["off"] !== "undefined" && Number(c["off"]) > 0);
-
-      const cycleInfo = hasCycle
-        ? '<div>Cycle: ' + Number(c["on"]) + ' days on / ' + Number(c["off"]) + ' days off</div>'
-        : "";
-
-      box.innerHTML = ''
-        + '<div><strong>' + (supplement && supplement.name ? supplement.name : "") + '</strong></div>'
-        + '<div>Dosage: ' + (supplement && supplement.dosage ? supplement.dosage : "") + '</div>'
-        + '<div>Time: ' + time + '</div>'
-        + cycleInfo
-        + '<div class="actions">'
-        +   '<button class="edit-btn" data-id="' + (supplement && supplement.id ? supplement.id : "") + '">Edit</button>'
-        +   '<button class="delete-btn" data-id="' + (supplement && supplement.id ? supplement.id : "") + '">Delete</button>'
-        + '</div>';
-
-      supplementSummaryContainer.appendChild(box);
-    });
-  });
-
-  // Wire up edit/delete
-  document.querySelectorAll(".edit-btn").forEach((btn) => {
-    btn.addEventListener("click", () => editSupplement(btn.dataset.id));
-  });
-  document.querySelectorAll(".delete-btn").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      await deleteSupplement(currentUser && currentUser.uid, btn.dataset.id);
-      await refreshData();
-      if (typeof window.refreshCalendar === "function") await window.refreshCalendar();
-    });
-  });
-}
-days on / ${Number(supplement.cycle.off)} days off</div>
+    const cycleInfo = hasCycle
+      ? `<div>Cycle: ${Number(supplement.cycle.on)} days on / ${Number(supplement.cycle.off)} days off</div>`
       : "";
 
-    box.innerHTML = 
+    box.innerHTML = `
       <div><strong>${supplement.name}</strong></div>
       <div>Dosage: ${supplement.dosage}</div>
       <div>Time: ${Array.isArray(supplement.time) && supplement.time.length ? supplement.time.join(", ") : "None selected"}</div>
@@ -298,7 +177,7 @@ days on / ${Number(supplement.cycle.off)} days off</div>
         <button class="edit-btn" data-id="${supplement.id}">Edit</button>
         <button class="delete-btn" data-id="${supplement.id}">Delete</button>
       </div>
-    ;
+    `;
 
     supplementSummaryContainer.appendChild(box);
   });
