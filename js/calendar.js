@@ -31,40 +31,44 @@ export function renderCalendar(month, year, supplements, calendarEl, labelEl) {
     daysGrid.appendChild(emptyCell);
   }
 
-  for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(year, month, day);
-    const dateString = date.toISOString().split("T")[0];
+for (let day = 1; day <= daysInMonth; day++) {
+  const date = new Date(year, month, day);
+  const dateString = date.toISOString().split("T")[0];
 
-    const dayEl = document.createElement("div");
-    dayEl.className = "day";
+  const dayEl = document.createElement("div");
+  dayEl.className = "day";
 
-    const numberEl = document.createElement("div");
-    numberEl.className = "day-number";
-    numberEl.textContent = day;
-    dayEl.appendChild(numberEl);
+  const numberEl = document.createElement("div");
+  numberEl.className = "day-number";
+  numberEl.textContent = day;
+  dayEl.appendChild(numberEl);
 
-    // Get all supplements for this day
-    const supplementsForDay = supplements.filter(s => s.date === dateString);
-    supplementsForDay.forEach(supplement => {
-      const supplementEl = document.createElement("div");
-      supplementEl.className = "supplement";
-      supplementEl.textContent = supplement.name;
+  // Create a fresh container for this day's supplements
+  const supplementsContainer = document.createElement("div");
+  supplementsContainer.className = "supplements-container";
 
-      // Apply inline color if available
-      if (supplement.color) {
-        supplementEl.style.backgroundColor = supplement.color;
-        supplementEl.style.color = "#fff";
-        supplementEl.style.padding = "2px 4px";
-        supplementEl.style.borderRadius = "4px";
-        supplementEl.style.marginTop = "2px";
-        supplementEl.style.fontSize = "0.75rem";
-      }
+  // Get all supplements for this day
+  const supplementsForDay = supplements.filter(s => s.date === dateString);
+  supplementsForDay.forEach(supplement => {
+    const supplementEl = document.createElement("div");
+    supplementEl.className = "supplement";
+    supplementEl.textContent = supplement.name;
 
-      supplementsContainer.appendChild(supplementEl);
-    });
-    dayEl.appendChild(supplementsContainer);
-    daysGrid.appendChild(dayEl);
-  }
+    if (supplement.color) {
+      supplementEl.style.backgroundColor = supplement.color;
+      supplementEl.style.color = "#fff";
+      supplementEl.style.padding = "2px 4px";
+      supplementEl.style.borderRadius = "4px";
+      supplementEl.style.marginTop = "2px";
+      supplementEl.style.fontSize = "0.75rem";
+    }
+
+    supplementsContainer.appendChild(supplementEl);
+  });
+
+  dayEl.appendChild(supplementsContainer);
+  daysGrid.appendChild(dayEl);
+}
 
   calendarEl.appendChild(daysGrid);
 }
