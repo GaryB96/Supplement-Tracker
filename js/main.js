@@ -174,7 +174,8 @@ async function refreshCalendar() {
     const expandedSupplements = [];
 
     const monthStart = new Date(currentYear, currentMonth, 1);
-    const monthEnd = new Date(currentYear, currentMonth + 1, 0);
+    const monthEnd = new Date(currentYear, currentMonth, 1);
+    monthEnd.setDate(monthEnd.getDate() + 60); // show 60 days ahead
 
     for (const supp of rawSupplements) {
       if (supp.cycle && supp.startDate) {
