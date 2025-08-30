@@ -1,7 +1,7 @@
 // auth.js
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
 // Firebase configuration
@@ -66,5 +66,15 @@ export async function changePassword(newPassword) {
   }
   throw new Error("No user is currently signed in.");
 }
+
+// 🔐 Reset password (sends reset email to the signed-in user's email)
+export async function resetPassword() {
+  const user = auth.currentUser;
+  if (!user || !user.email) {
+    throw new Error("No signed-in user email found. Please sign in again.");
+  }
+  await sendPasswordResetEmail(auth, user.email);
+}
+
 
 export { auth, db };
