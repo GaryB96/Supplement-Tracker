@@ -249,11 +249,11 @@ async function refreshCalendar() {
             date.getMonth() === currentMonth &&
             date.getFullYear() === currentYear
           ) {
-            expandedSupplements.push({
-              name: supp.name,
-              date: date.toISOString().split("T")[0],
-              color: supp.color || "#cccccc"
-            });
+          expandedSupplements.push({
+            name: supp.name,
+            date: toLocalYMD(date),       // <— local YYYY-MM-DD
+            color: supp.color || "#cccccc"
+          });
           }
         }
       } else if (supp.date) {
