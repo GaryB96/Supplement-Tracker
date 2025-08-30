@@ -45,10 +45,17 @@ if (form) {
     const onCycle = cycleCheckbox?.checked || false;
     const onDays = parseInt(document.getElementById("onDaysInput").value) || 0;
     const offDays = parseInt(document.getElementById("offDaysInput").value) || 0;
-    const colorClass = onCycle ? `cycle-color-${(Math.floor(Math.random() * 4) + 1)}` : "";
-    const date = new Date().toISOString().split("T")[0]; // Use today's date
+    const startDate = new Date().toISOString().split("T")[0]; // today's date
+    const color = onCycle ? getRandomColor() : "#cccccc";
 
-    const supplement = { name, dosage, time, onCycle, onDays, offDays, colorClass, date };
+    const supplement = {
+      name,
+      dosage,
+      time,
+      startDate,
+      cycle: onCycle ? { on: onDays, off: offDays } : null,
+      color
+    };
 
     try {
       if (editingSupplementId) {
@@ -64,11 +71,16 @@ if (form) {
       timeCheckboxes.forEach(cb => cb.checked = false);
       if (cancelEditBtn) cancelEditBtn.classList.add("hidden");
 
-      await refreshData(); // This now also updates the calendar
+      await refreshData();
     } catch (error) {
       console.error("❌ Failed to submit supplement:", error);
     }
   });
+}
+
+function getRandomColor() {
+  const colors = ["#2196F3", "#FF9800", "#9C27B0", "#E91E63"];
+  return colors[Math.floor(Math.random() * colors.length)];
 }
 
 function editSupplement(id) {
@@ -85,10 +97,11 @@ function editSupplement(id) {
     cb.checked = supplement.time.includes(cb.value);
   });
 
-  if (cycleCheckbox) cycleCheckbox.checked = supplement.onCycle;
-  if (cycleDetails) cycleDetails.classList.toggle("hidden", !supplement.onCycle);
-  document.getElementById("onDaysInput").value = supplement.onDays || "";
-  document.getElementById("offDaysInput").value = supplement.offDays || "";
+  const isCycled = supplement.cycle && supplement.cycle.on > 0;
+  if (cycleCheckbox) cycleCheckbox.checked = isCycled;
+  if (cycleDetails) cycleDetails.classList.toggle("hidden", !isCycled);
+  document.getElementById("onDaysInput").value = isCycled ? supplement.cycle.on : "";
+  document.getElementById("offDaysInput").value = isCycled ? supplement.cycle.off : "";
 
   if (cancelEditBtn) cancelEditBtn.classList.remove("hidden");
 }
@@ -115,10 +128,8 @@ async function refreshData() {
     renderSupplements();
     const today = new Date();
     if (calendarEl && labelEl) {
-  const today = new Date();
-  renderCalendar(today.getMonth(), today.getFullYear(), supplements, calendarEl, labelEl);
-}
-    renderCalendar(today.getMonth(), today.getFullYear(), supplements, calendarEl, labelEl);
+      renderCalendar(today.getMonth(), today.getFullYear(), supplements, calendarEl, labelEl);
+    }
   } catch (error) {
     console.error("❌ Failed to fetch supplements:", error);
   }
@@ -128,13 +139,13 @@ function renderSupplements() {
   supplementSummaryContainer.innerHTML = "";
   supplements.forEach(supplement => {
     const box = document.createElement("div");
-    const cycleClass = supplement.colorClass || "";
-    box.className = `supplement-box cycle-strip ${cycleClass}`;
+    box.className = `supplement-box cycle-strip`;
+    box.style.borderLeftColor = supplement.color || "#cccccc";
     box.innerHTML = `
       <div><strong>${supplement.name}</strong></div>
       <div>Dosage: ${supplement.dosage}</div>
       <div>Time: ${supplement.time?.join(", ") || "None selected"}</div>
-      ${supplement.onCycle ? `<div>Cycle: ${supplement.onDays} days on / ${supplement.offDays} days off</div>` : ""}
+      ${supplement.cycle ? `<div>Cycle: ${supplement.cycle.on} days on / ${supplement.cycle.off} days off</div>` : ""}
       <div class="actions">
         <button class="edit-btn" data-id="${supplement.id}">Edit</button>
         <button class="delete-btn" data-id="${supplement.id}">Delete</button>
