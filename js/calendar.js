@@ -33,7 +33,10 @@ export function renderCalendar(month, year, supplements, calendarEl, labelEl) {
 
 for (let day = 1; day <= daysInMonth; day++) {
   const date = new Date(year, month, day);
-  const dateString = date.toISOString().split("T")[0];
+  const mm = String(month + 1).padStart(2, "0");
+  const dd = String(day).padStart(2, "0");
+  const dateString = `${year}-${mm}-${dd}`;  // local YYYY-MM-DD
+
 
   const dayEl = document.createElement("div");
   dayEl.className = "day";
