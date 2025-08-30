@@ -1,4 +1,4 @@
-import { login, signup, logout, deleteAccount, monitorAuthState, changePassword } from "./auth.js";
+import { login, signup, logout, deleteAccount, monitorAuthState, changePassword, resetPassword } from "./auth.js";
 import { renderCalendar } from "./calendar.js";
 import { fetchSupplements } from "./supplements.js";
 import { EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
@@ -9,17 +9,54 @@ let currentYear = new Date().getFullYear();
 let currentUser = null;
 
 document.addEventListener("DOMContentLoaded", () => {
-  const logoutBtn = document.getElementById("logoutBtn");
-  const deleteAccountBtn = document.getElementById("deleteAccountBtn");
-  const calendarEl = document.getElementById("calendar");
-  const labelEl = document.getElementById("currentMonthLabel");
-  const loginForm = document.getElementById("loginForm");
-  const prevBtn = document.getElementById("prevMonth");
-  const nextBtn = document.getElementById("nextMonth");
-  const profileBtn = document.getElementById("profileBtn");
-  const profileDropdown = document.getElementById("profileDropdown");
-  const changePasswordBtn = document.getElementById("changePasswordBtn");
-  const deleteAccountLink = document.getElementById("deleteAccountLink");
+const logoutBtn = document.getElementById("logoutBtn");
+const calendarEl = document.getElementById("calendar");
+const labelEl = document.getElementById("currentMonthLabel");
+const loginForm = document.getElementById("loginForm");
+const prevBtn = document.getElementById("prevMonth");
+const nextBtn = document.getElementById("nextMonth");
+const profileButton = document.getElementById("profileButton");
+const profileDropdown = document.getElementById("profileDropdown");
+const resetPasswordLink = document.getElementById("resetPassword");
+const deleteAccountLink = document.getElementById("deleteAccount");
+
+  // Toggle the profile dropdown
+if (profileButton) {
+  profileButton.addEventListener("click", (e) => {
+    e.stopPropagation();
+    profileButton.parentElement.classList.toggle("show");
+  });
+
+  // Close dropdown when clicking outside
+  window.addEventListener("click", (event) => {
+    if (!event.target.matches("#profileButton")) {
+      document.querySelectorAll(".dropdown").forEach(d => d.classList.remove("show"));
+    }
+  });
+}
+  // Reset Password via Firebase (sends email)
+if (resetPasswordLink) {
+  resetPasswordLink.addEventListener("click", async (e) => {
+    e.preventDefault();
+    try {
+      await resetPassword(); // calls the exported function from auth.js
+      alert("Password reset email sent (check your inbox).");
+    } catch (err) {
+      console.error("Password reset error:", err);
+      alert("Could not send reset email: " + (err?.message || err));
+    }
+  });
+}
+
+// Open your existing delete confirmation modal from dropdown
+if (deleteAccountLink) {
+  deleteAccountLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    const modal = document.getElementById("confirmDeleteModal");
+    modal?.classList.remove("hidden");
+  });
+}
+
 
   monitorAuthState(async user => {
     if (user) {
@@ -109,9 +146,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const modal = document.getElementById("confirmDeleteModal");
     const confirmYes = document.getElementById("confirmDeleteYes");
     const confirmNo = document.getElementById("confirmDeleteNo");
-
-    deleteAccountBtn.addEventListener("click", () => {
-      modal?.classList.remove("hidden");
     });
 
     confirmNo?.addEventListener("click", () => {
