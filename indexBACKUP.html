@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
@@ -13,33 +14,7 @@
     body.logged-in #authContainer { display: none; }
     #authContainer { margin-bottom: 20px; }
     .modal.hidden { display: none; }
-  
-    /* Modal base */
-    .modal { 
-      position: fixed; inset: 0; 
-      display: flex; align-items: center; justify-content: center;
-      background: rgba(0,0,0,0.5);
-      z-index: 1000;
-      padding: 20px;
-    }
-    .modal.hidden { display: none; }
-    .modal-content {
-      background: #fff;
-      border-radius: 10px;
-      padding: 20px;
-      width: 100%;
-      max-width: 400px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-    }
-    .modal-actions {
-      display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px;
-    }
-    .btn-secondary { background: #e0e0e0; color:#333; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; }
-    .btn-danger { background: #e53935; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; }
-    .btn-secondary:hover { background:#d5d5d5; }
-    .btn-danger:hover { background:#c62828; }
-    #confirmPasswordInput { width:90%; padding:10px; border:1px solid #ccc; border-radius:8px; margin-top:8px; }
-</style>
+  </style>
 </head>
 <body>
 <div id="accountActions">
@@ -66,30 +41,11 @@
 </section>
 <!-- ✅ Main App Content -->
 <section id="appContent">
-<div id="confirmDeleteModal" class="modal hidden" role="dialog" aria-labelledby="confirmDeleteTitle" aria-modal="true">
-  <div class="modal-content">
-    <h2 id="confirmDeleteTitle">Delete account?</h2>
-    <p>This action permanently removes your data. Are you sure?</p>
-    <div class="modal-actions">
-      <button id="confirmDeleteNo" class="btn-secondary" type="button">No, cancel</button>
-      <button id="confirmDeleteYes" class="btn-danger" type="button">Yes, delete</button>
-    </div>
-  </div>
+<div aria-labelledby="confirmDeleteTitle" class="modal hidden" id="confirmDeleteModal" role="dialog">
+<p id="confirmDeleteTitle">Are you sure you want to delete your account? This action cannot be undone.</p>
+<button id="confirmDeleteYes">Yes, delete</button>
+<button id="confirmDeleteNo">No, cancel</button>
 </div>
-
-<!-- ✅ Fixed: Password Confirmation Modal matches modal styles/IDs -->
-<div id="passwordConfirmModal" class="modal hidden" role="dialog" aria-labelledby="passwordConfirmTitle" aria-modal="true">
-  <div class="modal-content">
-    <h3 id="passwordConfirmTitle">Confirm Account Deletion</h3>
-    <p>Please enter your password to confirm:</p>
-    <input type="password" id="confirmPasswordInput" placeholder="Password"/>
-    <div class="modal-actions">
-      <button id="passwordCancelBtn" class="btn-secondary" type="button">Cancel</button>
-      <button id="passwordConfirmBtn" class="btn-danger" type="button">Delete</button>
-    </div>
-  </div>
-</div>
-
 <form id="supplementForm">
 <input id="nameInput" placeholder="Supplement name" required=""/>
 <input id="dosageInput" placeholder="Dosage (e.g., 500mg)" required=""/>
@@ -104,6 +60,9 @@
 <input id="onDaysInput" placeholder="Days on" type="number"/>
 <input id="offDaysInput" placeholder="Days off" type="number"/>
 
+          <!-- <label class="cycle-start-label" for="cycleStartInput">Start Date</label> -->
+           <!--<input type="text" id="cycleStartInput" placeholder="Start Date" onfocus="this.type='date'" onblur="if(!this.value) this.type='text'">-->
+          <!--<input id="cycleStartInput" type="date" placeholder="Start Date"/>-->
 <div class="cycle-start-row">
   <label for="cycleStartInput" class="cycle-start-label">Start Date</label>
   <input type="date" id="cycleStartInput" />

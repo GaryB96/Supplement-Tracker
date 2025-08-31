@@ -8,30 +8,6 @@ let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
 let currentUser = null;
 
-// --- Delete Account: modal helpers ---
-function openConfirmDeleteModal() {
-  const modal = document.getElementById("confirmDeleteModal");
-  modal?.classList.remove("hidden");
-}
-function closeConfirmDeleteModal() {
-  const modal = document.getElementById("confirmDeleteModal");
-  modal?.classList.add("hidden");
-}
-function openPasswordConfirmModal() {
-  const pwdModal = document.getElementById("passwordConfirmModal");
-  const input = document.getElementById("confirmPasswordInput");
-  if (pwdModal) {
-    pwdModal.classList.remove("hidden");
-    // clear previous input
-    if (input) input.value = "";
-    setTimeout(() => input?.focus(), 50);
-  }
-}
-function closePasswordConfirmModal() {
-  const pwdModal = document.getElementById("passwordConfirmModal");
-  pwdModal?.classList.add("hidden");
-}
-
 document.addEventListener("DOMContentLoaded", () => {
   const logoutBtn = document.getElementById("logoutBtn");
   const calendarEl = document.getElementById("calendar");
@@ -40,62 +16,90 @@ document.addEventListener("DOMContentLoaded", () => {
   const prevBtn = document.getElementById("prevMonth");
   const nextBtn = document.getElementById("nextMonth");
 
-  // --- Profile dropdown ---
-  const profileButton = document.getElementById("profileButton");
-  const dropdownContainer = profileButton ? profileButton.closest(".dropdown") : null;
+// --- Profile dropdown (robust + scoped to the actual container) ---
+const profileButton = document.getElementById("profileButton");
+const dropdownContainer = profileButton ? profileButton.closest(".dropdown") : null;
 
-  const resetPasswordLink = document.getElementById("resetPassword");
-  const deleteAccountLink = document.getElementById("deleteAccount");
+const resetPasswordLink = document.getElementById("resetPassword");
+const deleteAccountLink = document.getElementById("deleteAccount");
 
-  if (dropdownContainer && profileButton) {
-    profileButton.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      dropdownContainer.classList.toggle("show");
-    });
-    document.addEventListener("click", (e) => {
-      if (!e.target.closest(".dropdown")) {
-        dropdownContainer.classList.remove("show");
-      }
-    });
-  }
+if (dropdownContainer && profileButton) {
+  // Toggle open/close on button click
+  profileButton.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropdownContainer.classList.toggle("show");
+  });
 
-  if (resetPasswordLink) {
-    resetPasswordLink.addEventListener("click", async (e) => {
-      e.preventDefault();
-      try {
-        await resetPassword();
-        alert("Password reset email sent (check your inbox).");
-      } catch (err) {
-        console.error("Password reset error:", err);
-        alert("Could not send reset email: " + (err?.message || err));
-      }
-    });
-  }
+  // Close when clicking anywhere outside the dropdown
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".dropdown")) {
+      dropdownContainer.classList.remove("show");
+    }
+  });
+}
 
-  // Open delete confirmation modal from dropdown
-  if (deleteAccountLink) {
-    deleteAccountLink.addEventListener("click", (e) => {
-      e.preventDefault();
-      openConfirmDeleteModal();
-    });
-  }
+// Reset password (send email via your auth.js function)
+if (resetPasswordLink) {
+  resetPasswordLink.addEventListener("click", async (e) => {
+    e.preventDefault();
+    try {
+      await resetPassword();
+      alert("Password reset email sent (check your inbox).");
+    } catch (err) {
+      console.error("Password reset error:", err);
+      alert("Could not send reset email: " + (err?.message || err));
+    }
+  });
+}
 
-  // --- Confirm Delete Modal wiring ---
+// Open delete confirmation modal from dropdown
+if (deleteAccountLink) {
+  deleteAccountLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    const modal = document.getElementById("confirmDeleteModal");
+    modal?.classList.remove("hidden");
+  });
+}
+
+
+  // --- Confirm Delete Modal wiring (uses your existing modal) ---
+  const modal = document.getElementById("confirmDeleteModal");
   const confirmYes = document.getElementById("confirmDeleteYes");
   const confirmNo = document.getElementById("confirmDeleteNo");
 
   if (confirmNo) {
     confirmNo.addEventListener("click", () => {
-      closeConfirmDeleteModal();
+      modal?.classList.add("hidden");
     });
   }
 
   if (confirmYes) {
     confirmYes.addEventListener("click", async () => {
-      // Step 1 done -> open password modal
-      closeConfirmDeleteModal();
-      openPasswordConfirmModal();
+      modal?.classList.add("hidden");
+
+      const user = auth.currentUser;
+      if (!user) {
+        alert("No user is currently signed in.");
+        return;
+      }
+
+      const password = prompt("Please re-enter your password to confirm deletion:");
+      if (!password) {
+        alert("Password is required to delete your account.");
+        return;
+      }
+
+      try {
+        const credential = EmailAuthProvider.credential(user.email, password);
+        await reauthenticateWithCredential(user, credential);
+        await deleteAccount(user);
+        alert("Your account has been deleted.");
+        window.location.href = "index.html";
+      } catch (error) {
+        alert("Account deletion failed: " + error.message);
+        console.error("Delete error:", error);
+      }
     });
   }
 
@@ -225,6 +229,7 @@ function generateCycleDates(startDateStr, cycle, endDate) {
   return dates;
 }
 
+
 // 🌐 Expose calendar refresh globally
 async function refreshCalendar() {
   if (!currentUser || !currentUser.uid) return;
@@ -273,49 +278,6 @@ async function refreshCalendar() {
   } catch (error) {
     console.error("❌ Failed to fetch supplements for calendar:", error);
   }
-
-  // --- Password confirm modal buttons ---
-  const passwordCancelBtn = document.getElementById("passwordCancelBtn");
-  const passwordConfirmBtn = document.getElementById("passwordConfirmBtn");
-
-  if (passwordCancelBtn) {
-    passwordCancelBtn.addEventListener("click", () => {
-      closePasswordConfirmModal();
-    });
-  }
-
-  if (passwordConfirmBtn) {
-    passwordConfirmBtn.addEventListener("click", async () => {
-      const user = auth.currentUser;
-      if (!user) {
-        alert("No user is currently signed in.");
-        closePasswordConfirmModal();
-        return;
-      }
-      const input = document.getElementById("confirmPasswordInput");
-      const password = input ? input.value : "";
-      if (!password) {
-        alert("Please enter your password.");
-        return;
-      }
-      try {
-        const credential = EmailAuthProvider.credential(user.email, password);
-        await reauthenticateWithCredential(user, credential);
-        await deleteAccount(user);
-        alert("Your account has been deleted.");
-        window.location.href = "index.html";
-      } catch (error) {
-        console.error(error);
-        if (error.code === "auth/wrong-password") {
-          alert("Incorrect password. Please try again.");
-        } else if (error.code === "auth/too-many-requests") {
-          alert("Too many attempts. Please try again later.");
-        } else {
-          alert("An error occurred. " + (error.message || ""));
-        }
-      } finally {
-        closePasswordConfirmModal();
-      }
-    });
-  }
 }
+
+window.refreshCalendar = refreshCalendar;
