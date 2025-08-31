@@ -27,6 +27,11 @@ window.addEventListener("user-authenticated", async e => {
   await refreshData();
 });
 
+function getTimeCheckboxes() {
+  // Support either .checkbox-tiles or .checkbox-group containers; exclude the cycle checkbox
+  return document.querySelectorAll(".checkbox-tiles input[type='checkbox']:not(#cycleCheckbox), .checkbox-group input[type='checkbox']:not(#cycleCheckbox)");
+}
+
 if (cycleCheckbox && cycleDetails) {
   cycleCheckbox.addEventListener("change", () => {
     cycleDetails.classList.toggle("hidden", !cycleCheckbox.checked);
@@ -41,17 +46,18 @@ if (form) {
     const name = document.getElementById("nameInput").value.trim();
     const dosage = document.getElementById("dosageInput").value.trim();
 
-    // Only capture time-of-day checkboxes, exclude the cycle checkbox
-    const timeCheckboxes = document.querySelectorAll(".checkbox-group input[type='checkbox']:not(#cycleCheckbox)");
+    const timeCheckboxes = getTimeCheckboxes();
     const time = Array.from(timeCheckboxes)
       .filter(cb => cb.checked)
       .map(cb => cb.value);
 
     const onCycle = cycleCheckbox?.checked || false;
-    const onDays = parseInt(document.getElementById("onDaysInput").value, 10) || 0;
-    const offDays = parseInt(document.getElementById("offDaysInput").value, 10) || 0;
+    const onDays = parseInt(document.getElementById("onDaysInput")?.value, 10) || 0;
+    const offDays = parseInt(document.getElementById("offDaysInput")?.value, 10) || 0;
+    const picked = (document.getElementById("cycleStartInput") && document.getElementById("cycleStartInput").value) ? document.getElementById("cycleStartInput").value : null;
 
-    const startDate = new Date().toISOString().split("T")[0]; // today's date
+    // If cycling, allow user to pick the cycle start date; otherwise default to today
+    const startDate = onCycle && picked ? picked : new Date().toISOString().split("T")[0];
     const color = onCycle ? getRandomColor() : "#cccccc";
 
     const supplement = {
@@ -59,13 +65,11 @@ if (form) {
       dosage,
       time,
       startDate,
-      // store a cycle object only if it's actually meaningful
-      cycle: (onCycle && (onDays > 0 || offDays > 0)) ? { on: onDays, off: offDays } : null,
+      cycle: (onCycle && (onDays > 0 || offDays > 0)) ? { on: onDays, off: offDays, startDate: startDate } : null,
       color
     };
 
     try {
-      // If editing, replace the existing one (current simple approach)
       if (editingSupplementId) {
         await deleteSupplement(currentUser.uid, editingSupplementId);
         editingSupplementId = null;
@@ -80,7 +84,6 @@ if (form) {
       timeCheckboxes.forEach(cb => cb.checked = false);
       if (cancelEditBtn) cancelEditBtn.classList.add("hidden");
 
-      // Refresh data list AND calendar immediately
       await refreshData();
       if (typeof window.refreshCalendar === "function") {
         await window.refreshCalendar();
@@ -105,17 +108,20 @@ function editSupplement(id) {
   document.getElementById("nameInput").value = supplement.name || "";
   document.getElementById("dosageInput").value = supplement.dosage || "";
 
-  // Only touch time-of-day checkboxes (exclude cycle checkbox)
-  const timeCheckboxes = document.querySelectorAll(".checkbox-group input[type='checkbox']:not(#cycleCheckbox)");
+  const timeCheckboxes = getTimeCheckboxes();
   timeCheckboxes.forEach(cb => {
     cb.checked = Array.isArray(supplement.time) && supplement.time.includes(cb.value);
   });
 
-  const hasCycle = !!(supplement.cycle && (Number(supplement.cycle.on) > 0 || Number(supplement.cycle.off) > 0));
+  const hasCycle = !!(supplement.cycle && (Number(supplement.cycle["on"]) > 0 || Number(supplement.cycle["off"]) > 0));
   if (cycleCheckbox) cycleCheckbox.checked = hasCycle;
   if (cycleDetails) cycleDetails.classList.toggle("hidden", !hasCycle);
-  document.getElementById("onDaysInput").value = hasCycle ? Number(supplement.cycle.on) : "";
-  document.getElementById("offDaysInput").value = hasCycle ? Number(supplement.cycle.off) : "";
+  const onInput = document.getElementById("onDaysInput");
+  const offInput = document.getElementById("offDaysInput");
+  const startInput = document.getElementById("cycleStartInput");
+  if (onInput) onInput.value = hasCycle ? Number(supplement.cycle["on"]) : "";
+  if (offInput) offInput.value = hasCycle ? Number(supplement.cycle["off"]) : "";
+  if (startInput) startInput.value = hasCycle ? (supplement.cycle["startDate"] || (supplement.startDate || "")) : "";
 
   if (cancelEditBtn) cancelEditBtn.classList.remove("hidden");
 }
@@ -126,7 +132,7 @@ if (cancelEditBtn) {
     form.reset();
     if (cycleCheckbox) cycleCheckbox.checked = false;
     if (cycleDetails) cycleDetails.classList.add("hidden");
-    document.querySelectorAll(".checkbox-group input[type='checkbox']").forEach(cb => cb.checked = false);
+    getTimeCheckboxes().forEach(cb => cb.checked = false);
     cancelEditBtn.classList.add("hidden");
   });
 }
@@ -138,112 +144,93 @@ async function refreshData() {
   }
 
   try {
-supplements = await fetchSupplements(currentUser.uid);
-renderSupplements();
+    supplements = await fetchSupplements(currentUser.uid);
+    renderSupplements();
 
-// Use the global, expanded render from main.js
-if (typeof window.refreshCalendar === "function") {
-  await window.refreshCalendar();
-}
-
+    if (typeof window.refreshCalendar === "function") {
+      await window.refreshCalendar();
+    }
   } catch (error) {
     console.error("❌ Failed to fetch supplements:", error);
   }
 }
 
-
 function renderSupplements() {
   // Clear container
   supplementSummaryContainer.innerHTML = "";
 
-  // Normalize helpers
+  // Helpers
   const norm = (v) => (typeof v === "string" ? v.trim().toLowerCase() : "");
-  const toDisplay = (v) => (typeof v === "string" && v.length ? v[0].toUpperCase() + v.slice(1) : "");
+  const cap1 = (s) => (s && s.length ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
-  // Group order and bags
-  const GROUP_ORDER = ["Morning", "Afternoon", "Evening", "Unscheduled"];
+  const ORDER = ["Morning", "Afternoon", "Evening", "Unscheduled"];
   const groups = { Morning: [], Afternoon: [], Evening: [], Unscheduled: [] };
 
-  // Expand supplements into groups (duplicate across multiple selected times)
   (supplements || []).forEach((supplement) => {
     const times = Array.isArray(supplement && supplement.time) ? supplement.time : [];
     const normalized = times
       .map(norm)
-      .map((t) =>
-        t.startsWith("m") ? "morning" :
-        t.startsWith("a") ? "afternoon" :
-        t.startsWith("e") ? "evening" :
-        ""
-      )
+      .map((t) => t.startsWith("m") ? "morning" : t.startsWith("a") ? "afternoon" : t.startsWith("e") ? "evening" : "")
       .filter(Boolean);
 
     if (normalized.length === 0) {
       groups.Unscheduled.push(supplement);
     } else {
       normalized.forEach((t) => {
-        const key = toDisplay(t); // "morning" -> "Morning"
+        const key = cap1(t);
         if (groups[key]) groups[key].push(supplement);
         else groups.Unscheduled.push(supplement);
       });
     }
   });
 
-  // If no items ended up in any group, fall back to flat list
-  const totalCount = GROUP_ORDER.reduce((n, k) => n + (groups[k] ? groups[k].length : 0), 0);
-  if (totalCount === 0) {
+  const total = ORDER.reduce((n, k) => n + (groups[k] ? groups[k].length : 0), 0);
+  if (total === 0) {
+    // Fallback: flat list
     (supplements || []).forEach((supplement) => {
       const box = document.createElement("div");
       box.className = "supplement-box cycle-strip";
       box.style.borderLeftColor = (supplement && supplement.color) || "#cccccc";
 
       const c = (supplement && supplement.cycle) || {};
-      const hasCycle =
-        (typeof c["on"] !== "undefined" && Number(c["on"]) > 0) ||
-        (typeof c["off"] !== "undefined" && Number(c["off"]) > 0);
+      const onDays = Number(c["on"] || 0);
+      const offDays = Number(c["off"] || 0);
+      const hasCycle = onDays > 0 || offDays > 0;
 
-      const timesText = Array.isArray(supplement && supplement.time) && supplement.time.length
+      const timesText = (Array.isArray(supplement && supplement.time) && supplement.time.length)
         ? supplement.time.join(", ")
         : "None selected";
 
       const cycleInfo = hasCycle
-        ? '<div>Cycle: ' + Number(c["on"]) + ' days on / ' + Number(c["off"]) + ' days off</div>'
-        : "";
+        ? '<div>Cycle: ' + onDays + ' days on / ' + offDays + ' days off</div>'
+        : '';
 
-      box.innerHTML = ''
-        + '<div><strong>' + (supplement && supplement.name ? supplement.name : "") + '</strong></div>'
-        + '<div>Dosage: ' + (supplement && supplement.dosage ? supplement.dosage : "") + '</div>'
+      const html = ''
+        + '<div><strong>' + (supplement && supplement.name ? supplement.name : '') + '</strong></div>'
+        + '<div>Dosage: ' + (supplement && supplement.dosage ? supplement.dosage : '') + '</div>'
         + '<div>Time: ' + timesText + '</div>'
         + cycleInfo
         + '<div class="actions">'
-        +   '<button class="edit-btn" data-id="' + (supplement && supplement.id ? supplement.id : "") + '">Edit</button>'
-        +   '<button class="delete-btn" data-id="' + (supplement && supplement.id ? supplement.id : "") + '">Delete</button>'
+        +   '<button class="edit-btn" data-id="' + (supplement && supplement.id ? supplement.id : '') + '">Edit</button>'
+        +   '<button class="delete-btn" data-id="' + (supplement && supplement.id ? supplement.id : '') + '">Delete</button>'
         + '</div>';
 
+      box.innerHTML = html;
       supplementSummaryContainer.appendChild(box);
     });
 
-    // Wire up actions
-    document.querySelectorAll(".edit-btn").forEach((btn) => {
-      btn.addEventListener("click", () => editSupplement(btn.dataset.id));
-    });
-    document.querySelectorAll(".delete-btn").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        await deleteSupplement(currentUser && currentUser.uid, btn.dataset.id);
-        await refreshData();
-        if (typeof window.refreshCalendar === "function") await window.refreshCalendar();
-      });
-    });
+    wireSummaryActions();
     return;
   }
 
-  // Otherwise render grouped sections in fixed order
-  GROUP_ORDER.forEach((time) => {
-    const arr = groups[time];
+  // Grouped render
+  ORDER.forEach((label) => {
+    const arr = groups[label];
     if (!arr || arr.length === 0) return;
 
     const header = document.createElement("div");
     header.className = "summary-group-title";
-    header.textContent = time;
+    header.textContent = label;
     supplementSummaryContainer.appendChild(header);
 
     arr.forEach((supplement) => {
@@ -252,29 +239,33 @@ function renderSupplements() {
       box.style.borderLeftColor = (supplement && supplement.color) || "#cccccc";
 
       const c = (supplement && supplement.cycle) || {};
-      const hasCycle =
-        (typeof c["on"] !== "undefined" && Number(c["on"]) > 0) ||
-        (typeof c["off"] !== "undefined" && Number(c["off"]) > 0);
+      const onDays = Number(c["on"] || 0);
+      const offDays = Number(c["off"] || 0);
+      const hasCycle = onDays > 0 || offDays > 0;
 
       const cycleInfo = hasCycle
-        ? '<div>Cycle: ' + Number(c["on"]) + ' days on / ' + Number(c["off"]) + ' days off</div>'
-        : "";
+        ? '<div>Cycle: ' + onDays + ' days on / ' + offDays + ' days off</div>'
+        : '';
 
-      box.innerHTML = ''
-        + '<div><strong>' + (supplement && supplement.name ? supplement.name : "") + '</strong></div>'
-        + '<div>Dosage: ' + (supplement && supplement.dosage ? supplement.dosage : "") + '</div>'
-        + '<div>Time: ' + time + '</div>'
+      const html = ''
+        + '<div><strong>' + (supplement && supplement.name ? supplement.name : '') + '</strong></div>'
+        + '<div>Dosage: ' + (supplement && supplement.dosage ? supplement.dosage : '') + '</div>'
+        + '<div>Time: ' + label + '</div>'
         + cycleInfo
         + '<div class="actions">'
-        +   '<button class="edit-btn" data-id="' + (supplement && supplement.id ? supplement.id : "") + '">Edit</button>'
-        +   '<button class="delete-btn" data-id="' + (supplement && supplement.id ? supplement.id : "") + '">Delete</button>'
+        +   '<button class="edit-btn" data-id="' + (supplement && supplement.id ? supplement.id : '') + '">Edit</button>'
+        +   '<button class="delete-btn" data-id="' + (supplement && supplement.id ? supplement.id : '') + '">Delete</button>'
         + '</div>';
 
+      box.innerHTML = html;
       supplementSummaryContainer.appendChild(box);
     });
   });
 
-  // Wire up edit/delete
+  wireSummaryActions();
+}
+
+function wireSummaryActions() {
   document.querySelectorAll(".edit-btn").forEach((btn) => {
     btn.addEventListener("click", () => editSupplement(btn.dataset.id));
   });
@@ -286,34 +277,5 @@ function renderSupplements() {
     });
   });
 }
-days on / ${Number(supplement.cycle.off)} days off</div>
-      : "";
 
-    box.innerHTML = 
-      <div><strong>${supplement.name}</strong></div>
-      <div>Dosage: ${supplement.dosage}</div>
-      <div>Time: ${Array.isArray(supplement.time) && supplement.time.length ? supplement.time.join(", ") : "None selected"}</div>
-      ${cycleInfo}
-      <div class="actions">
-        <button class="edit-btn" data-id="${supplement.id}">Edit</button>
-        <button class="delete-btn" data-id="${supplement.id}">Delete</button>
-      </div>
-    ;
-
-    supplementSummaryContainer.appendChild(box);
-  });
-
-  document.querySelectorAll(".edit-btn").forEach(btn => {
-    btn.addEventListener("click", () => editSupplement(btn.dataset.id));
-  });
-
-  document.querySelectorAll(".delete-btn").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      await deleteSupplement(currentUser.uid, btn.dataset.id);
-      await refreshData();
-      if (typeof window.refreshCalendar === "function") {
-        await window.refreshCalendar();
-      }
-    });
-  });
-}
+// Export nothing; this module sets up listeners and functions by side effect.
