@@ -54,8 +54,10 @@ if (form) {
     const onCycle = cycleCheckbox?.checked || false;
     const onDays = parseInt(document.getElementById("onDaysInput")?.value, 10) || 0;
     const offDays = parseInt(document.getElementById("offDaysInput")?.value, 10) || 0;
+    const picked = (document.getElementById("cycleStartInput") && document.getElementById("cycleStartInput").value) ? document.getElementById("cycleStartInput").value : null;
 
-    const startDate = new Date().toISOString().split("T")[0]; // today's date
+    // If cycling, allow user to pick the cycle start date; otherwise default to today
+    const startDate = onCycle && picked ? picked : new Date().toISOString().split("T")[0];
     const color = onCycle ? getRandomColor() : "#cccccc";
 
     const supplement = {
@@ -63,7 +65,7 @@ if (form) {
       dosage,
       time,
       startDate,
-      cycle: (onCycle && (onDays > 0 || offDays > 0)) ? { on: onDays, off: offDays } : null,
+      cycle: (onCycle && (onDays > 0 || offDays > 0)) ? { on: onDays, off: offDays, startDate: startDate } : null,
       color
     };
 
@@ -116,8 +118,10 @@ function editSupplement(id) {
   if (cycleDetails) cycleDetails.classList.toggle("hidden", !hasCycle);
   const onInput = document.getElementById("onDaysInput");
   const offInput = document.getElementById("offDaysInput");
+  const startInput = document.getElementById("cycleStartInput");
   if (onInput) onInput.value = hasCycle ? Number(supplement.cycle["on"]) : "";
   if (offInput) offInput.value = hasCycle ? Number(supplement.cycle["off"]) : "";
+  if (startInput) startInput.value = hasCycle ? (supplement.cycle["startDate"] || (supplement.startDate || "")) : "";
 
   if (cancelEditBtn) cancelEditBtn.classList.remove("hidden");
 }

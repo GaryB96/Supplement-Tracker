@@ -245,3 +245,21 @@ body:not(.logged-in) #accountActions { display: none; }
   border-bottom: 1px solid #e5e5e5;
   padding-bottom: 4px;
 }
+.cycle-start-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;   /* centers row under the Days inputs */
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.cycle-start-label {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+#cycleStartInput {
+  margin: 0;                 /* prevent the default auto-centering */
+  display: inline-block;
+  width: auto;
+}
