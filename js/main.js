@@ -4,9 +4,143 @@ import { fetchSupplements } from "./supplements.js";
 import { EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
 import { auth } from "./firebaseConfig.js";
 
+// ==== Notifications UI & ICS Export ====
+import { db } from "./firebaseConfig.js";
+import { collection, getDocs, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+
+function el(id){ return document.getElementById(id); }
+function guessTZ(){ try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Halifax"; } catch { return "America/Halifax"; } }
+
+async function openNotificationsModal() {
+  if (!currentUser) return;
+  el("notificationsModal")?.classList.remove("hidden");
+  const statusEl = el("notifStatus"); if (statusEl) statusEl.textContent = "";
+  const chk = el("notifyEmailChk"); if (chk) chk.checked = false;
+  const emailEl = el("notifyEmailInput"); if (emailEl) emailEl.value = (auth.currentUser?.email || "");
+  const tzEl = el("timezoneSelect"); if (tzEl) tzEl.value = guessTZ();
+  try {
+    const ref = doc(db, `users/${currentUser.uid}/settings/notifications`);
+    const snap = await getDoc(ref);
+    if (snap.exists()) {
+      const s = snap.data();
+      if (chk) chk.checked = !!s.notifyEmail;
+      if (emailEl && s.email) emailEl.value = s.email;
+      if (tzEl && s.timezone) tzEl.value = s.timezone;
+    }
+  } catch (e) { console.error("Failed to load notif settings", e); }
+}
+function closeNotificationsModal(){ el("notificationsModal")?.classList.add("hidden"); }
+
+async function saveNotifications() {
+  if (!currentUser) return;
+  const chk = el("notifyEmailChk");
+  const emailEl = el("notifyEmailInput");
+  const tzEl = el("timezoneSelect");
+  const ref = doc(db, `users/${currentUser.uid}/settings/notifications`);
+  await setDoc(ref, { notifyEmail: !!(chk && chk.checked), email: (emailEl && emailEl.value ? emailEl.value.trim() : "") || null, timezone: (tzEl && tzEl.value) || guessTZ() }, { merge:true });
+  const statusEl = el("notifStatus"); if (statusEl) statusEl.textContent = "Saved.";
+}
+
+// --- ICS helpers ---
+function addDaysUTC(dateUTC, days){ const d = new Date(Date.UTC(dateUTC.getUTCFullYear(), dateUTC.getUTCMonth(), dateUTC.getUTCDate())); d.setUTCDate(d.getUTCDate()+days); return d; }
+function ymdUTC(d){ return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`; }
+
+function buildIcs(boundaries, calendarName){
+  const fmtDate = d => `${d.getUTCFullYear()}${String(d.getUTCMonth()+1).padStart(2,'0')}${String(d.getUTCDate()).padStart(2,'0')}`;
+  const stamp = new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z');
+  let ics = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Supplement Tracker//Cycle Reminders//EN\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\n";
+  ics += `X-WR-CALNAME:${(calendarName||"Cycle Reminders").replace(/[\r\n]/g,' ')}\r\n`;
+  for (const evt of boundaries){
+    const dt = fmtDate(evt.dateUTC);
+    const dtEnd = fmtDate(addDaysUTC(evt.dateUTC,1));
+    ics += "BEGIN:VEVENT\r\n";
+    ics += `UID:${evt.uid}\r\n`;
+    ics += `DTSTAMP:${stamp}\r\n`;
+    ics += `SUMMARY:${evt.title.replace(/[\r\n]/g,' ')}\r\n`;
+    ics += `DTSTART;VALUE=DATE:${dt}\r\n`;
+    ics += `DTEND;VALUE=DATE:${dtEnd}\r\n`;
+    ics += "END:VEVENT\r\n";
+  }
+  ics += "END:VCALENDAR\r\n";
+  return ics;
+}
+
+async function downloadIcs(){
+  if (!currentUser) return;
+  const statusEl = el("notifStatus"); if (statusEl) statusEl.textContent = "Building calendar…";
+  const supps = await fetchSupplements(currentUser.uid);
+  const nowUTC = new Date();
+  const endUTC = addDaysUTC(nowUTC, 365);
+  const boundaries = [];
+  for (const s of supps){
+    const name = s.name || "Supplement";
+    const on = (s.cycle && s.cycle.on) || 0;
+    const off = (s.cycle && s.cycle.off) || 0;
+    if (!s.startDate || on <= 0 || off < 0) continue;
+    const start = new Date(s.startDate);
+    const startUTC = new Date(Date.UTC(start.getUTCFullYear(), start.getMonth(), start.getDate()));
+    const period = on + off; if (period <= 0) continue;
+    const pushIfInRange = (boundaryUTC, title) => {
+      const notifyDay = addDaysUTC(boundaryUTC, -1);
+      if (notifyDay >= nowUTC && notifyDay <= endUTC){
+        const uid = `${s.id}-${title}-${ymdUTC(notifyDay)}`;
+        boundaries.push({ dateUTC: notifyDay, title: `${name}: ${title} tomorrow`, uid });
+      }
+    };
+    let k = -2;
+    while (true){
+      const onEnds = addDaysUTC(startUTC, on + k*period);
+      const onBegins = addDaysUTC(startUTC, period + k*period);
+      if (onEnds > addDaysUTC(endUTC, 2) && onBegins > addDaysUTC(endUTC, 2)) break;
+      if (onEnds >= addDaysUTC(nowUTC, -2)) pushIfInRange(onEnds, "ON ends");
+      if (onBegins >= addDaysUTC(nowUTC, -2)) pushIfInRange(onBegins, "ON begins");
+      k++; if (k > 2000) break;
+    }
+  }
+  boundaries.sort((a,b)=> a.dateUTC - b.dateUTC);
+  const ics = buildIcs(boundaries, "Cycle Reminders");
+  const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = "cycle-reminders.ics"; document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
+  if (statusEl) statusEl.textContent = `Calendar generated with ${boundaries.length} reminders.`;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("openNotifications")?.addEventListener("click", (e)=>{ e.preventDefault(); openNotificationsModal(); });
+  document.getElementById("closeNotificationsBtn")?.addEventListener("click", (e)=>{ e.preventDefault(); closeNotificationsModal(); });
+  document.getElementById("saveNotificationsBtn")?.addEventListener("click", (e)=>{ e.preventDefault(); saveNotifications(); });
+  document.getElementById("downloadIcsBtn")?.addEventListener("click", (e)=>{ e.preventDefault(); downloadIcs(); });
+});
+
+
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
 let currentUser = null;
+
+// --- Delete Account: modal helpers ---
+function openConfirmDeleteModal() {
+  const modal = document.getElementById("confirmDeleteModal");
+  modal?.classList.remove("hidden");
+}
+function closeConfirmDeleteModal() {
+  const modal = document.getElementById("confirmDeleteModal");
+  modal?.classList.add("hidden");
+}
+function openPasswordConfirmModal() {
+  const pwdModal = document.getElementById("passwordConfirmModal");
+  const input = document.getElementById("confirmPasswordInput");
+  if (pwdModal) {
+    pwdModal.classList.remove("hidden");
+    // clear previous input
+    if (input) input.value = "";
+    setTimeout(() => input?.focus(), 50);
+  }
+}
+function closePasswordConfirmModal() {
+  const pwdModal = document.getElementById("passwordConfirmModal");
+  pwdModal?.classList.add("hidden");
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   const logoutBtn = document.getElementById("logoutBtn");
@@ -16,94 +150,66 @@ document.addEventListener("DOMContentLoaded", () => {
   const prevBtn = document.getElementById("prevMonth");
   const nextBtn = document.getElementById("nextMonth");
 
-// --- Profile dropdown (robust + scoped to the actual container) ---
-const profileButton = document.getElementById("profileButton");
-const dropdownContainer = profileButton ? profileButton.closest(".dropdown") : null;
+  // --- Profile dropdown ---
+  const profileButton = document.getElementById("profileButton");
+  const dropdownContainer = profileButton ? profileButton.closest(".dropdown") : null;
 
-const resetPasswordLink = document.getElementById("resetPassword");
-const deleteAccountLink = document.getElementById("deleteAccount");
+  const resetPasswordLink = document.getElementById("resetPassword");
+  const deleteAccountLink = document.getElementById("deleteAccount");
 
-if (dropdownContainer && profileButton) {
-  // Toggle open/close on button click
-  profileButton.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dropdownContainer.classList.toggle("show");
-  });
+  if (dropdownContainer && profileButton) {
+    profileButton.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropdownContainer.classList.toggle("show");
+    });
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".dropdown")) {
+        dropdownContainer.classList.remove("show");
+      }
+    });
+  }
 
-  // Close when clicking anywhere outside the dropdown
-  document.addEventListener("click", (e) => {
-    if (!e.target.closest(".dropdown")) {
-      dropdownContainer.classList.remove("show");
-    }
-  });
-}
+  if (resetPasswordLink) {
+    resetPasswordLink.addEventListener("click", async (e) => {
+      e.preventDefault();
+      try {
+        await resetPassword();
+        alert("Password reset email sent (check your inbox).");
+      } catch (err) {
+        console.error("Password reset error:", err);
+        alert("Could not send reset email: " + (err?.message || err));
+      }
+    });
+  }
 
-// Reset password (send email via your auth.js function)
-if (resetPasswordLink) {
-  resetPasswordLink.addEventListener("click", async (e) => {
-    e.preventDefault();
-    try {
-      await resetPassword();
-      alert("Password reset email sent (check your inbox).");
-    } catch (err) {
-      console.error("Password reset error:", err);
-      alert("Could not send reset email: " + (err?.message || err));
-    }
-  });
-}
+  // Open delete confirmation modal from dropdown
+  if (deleteAccountLink) {
+    deleteAccountLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      openConfirmDeleteModal();
+    });
+  }
 
-// Open delete confirmation modal from dropdown
-if (deleteAccountLink) {
-  deleteAccountLink.addEventListener("click", (e) => {
-    e.preventDefault();
-    const modal = document.getElementById("confirmDeleteModal");
-    modal?.classList.remove("hidden");
-  });
-}
-
-
-  // --- Confirm Delete Modal wiring (uses your existing modal) ---
-  const modal = document.getElementById("confirmDeleteModal");
+  // --- Confirm Delete Modal wiring ---
   const confirmYes = document.getElementById("confirmDeleteYes");
   const confirmNo = document.getElementById("confirmDeleteNo");
 
   if (confirmNo) {
     confirmNo.addEventListener("click", () => {
-      modal?.classList.add("hidden");
+      closeConfirmDeleteModal();
     });
   }
 
   if (confirmYes) {
     confirmYes.addEventListener("click", async () => {
-      modal?.classList.add("hidden");
-
-      const user = auth.currentUser;
-      if (!user) {
-        alert("No user is currently signed in.");
-        return;
-      }
-
-      const password = prompt("Please re-enter your password to confirm deletion:");
-      if (!password) {
-        alert("Password is required to delete your account.");
-        return;
-      }
-
-      try {
-        const credential = EmailAuthProvider.credential(user.email, password);
-        await reauthenticateWithCredential(user, credential);
-        await deleteAccount(user);
-        alert("Your account has been deleted.");
-        window.location.href = "index.html";
-      } catch (error) {
-        alert("Account deletion failed: " + error.message);
-        console.error("Delete error:", error);
-      }
+      // Step 1 done -> open password modal
+      closeConfirmDeleteModal();
+      openPasswordConfirmModal();
     });
   }
 
-  // --- Auth state → show/hide app and render calendar ---
+  // --- Auth state → show/hide app && render calendar ---
   monitorAuthState(async user => {
     if (user) {
       document.body.classList.add("logged-in");
@@ -151,7 +257,7 @@ if (deleteAccountLink) {
       const clickedButton = e.submitter?.id;
 
       if (!email || !password) {
-        alert("Please enter both email and password.");
+        alert("Please enter both email && password.");
         return;
       }
 
@@ -165,7 +271,7 @@ if (deleteAccountLink) {
           await login(email, password);
         } else if (clickedButton === "signupBtn") {
           await signup(email, password);
-          alert("Account created and logged in!");
+          alert("Account created && logged in!");
         } else {
           alert("Unknown action.");
           return;
@@ -229,7 +335,6 @@ function generateCycleDates(startDateStr, cycle, endDate) {
   return dates;
 }
 
-
 // 🌐 Expose calendar refresh globally
 async function refreshCalendar() {
   if (!currentUser || !currentUser.uid) return;
@@ -278,6 +383,49 @@ async function refreshCalendar() {
   } catch (error) {
     console.error("❌ Failed to fetch supplements for calendar:", error);
   }
-}
 
-window.refreshCalendar = refreshCalendar;
+  // --- Password confirm modal buttons ---
+  const passwordCancelBtn = document.getElementById("passwordCancelBtn");
+  const passwordConfirmBtn = document.getElementById("passwordConfirmBtn");
+
+  if (passwordCancelBtn) {
+    passwordCancelBtn.addEventListener("click", () => {
+      closePasswordConfirmModal();
+    });
+  }
+
+  if (passwordConfirmBtn) {
+    passwordConfirmBtn.addEventListener("click", async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        alert("No user is currently signed in.");
+        closePasswordConfirmModal();
+        return;
+      }
+      const input = document.getElementById("confirmPasswordInput");
+      const password = input ? input.value : "";
+      if (!password) {
+        alert("Please enter your password.");
+        return;
+      }
+      try {
+        const credential = EmailAuthProvider.credential(user.email, password);
+        await reauthenticateWithCredential(user, credential);
+        await deleteAccount(user);
+        alert("Your account has been deleted.");
+        window.location.href = "index.html";
+      } catch (error) {
+        console.error(error);
+        if (error.code === "auth/wrong-password") {
+          alert("Incorrect password. Please try again.");
+        } else if (error.code === "auth/too-many-requests") {
+          alert("Too many attempts. Please try again later.");
+        } else {
+          alert("An error occurred. " + (error.message || ""));
+        }
+      } finally {
+        closePasswordConfirmModal();
+      }
+    });
+  }
+}
