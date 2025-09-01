@@ -35,10 +35,30 @@
     content?.classList.add('modal-content');
   }
 
+  function injectImportTip(modal) {
+    // Add a one-time hint encouraging a separate calendar for easy toggling/removal
+    if (!modal) return;
+    const body = modal.querySelector('.modal-content') || modal;
+    const TIP_ID = 'ics-separate-calendar-tip';
+    if (!body.querySelector('#' + TIP_ID)) {
+      const p = document.createElement('p');
+      p.id = TIP_ID;
+      p.className = 'muted';
+      // Insert just before the buttons at the bottom if present, else append
+      const bottomBtn = body.querySelector('#notificationsCloseBtnBottom');
+      if (bottomBtn?.parentElement) {
+        bottomBtn.parentElement.insertBefore(p, bottomBtn);
+      } else {
+        body.appendChild(p);
+      }
+    }
+  }
+
   function openModal() {
     const modal = $('#notificationsModal');
     if (!modal) return console.warn('Notifications modal not found');
     ensureModalStyles(modal);
+    injectImportTip(modal);
     modal.classList.remove('hidden');
     modal.setAttribute('aria-hidden', 'false');
   }
@@ -78,9 +98,19 @@
     t.setUTCFullYear(t.getUTCFullYear() + 1);
     return t;
   }
-  function fmtICSDate(yyyy_mm_dd) {
-    return yyyy_mm_dd.replace(/-/g, '') + 'T000000Z';
+
+  // All-day formatting helpers (avoid times entirely)
+  function fmtYMD(yyyy_mm_dd) { return String(yyyy_mm_dd).replace(/-/g, ''); }
+  function plusDaysISO(yyyy_mm_dd, days) {
+    const d = new Date(yyyy_mm_dd + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + days);
+    return d.toISOString().slice(0, 10);
   }
+  const esc = (s) => String(s)
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\n/g, '\\n');
 
   async function fetchCycleBoundaries() {
     const start = startOfTomorrowUTC();
@@ -98,61 +128,105 @@
     const lines = [];
     const now = new Date();
     const dtstamp = now.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-    lines.push('BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//YourApp//Notifications//EN', `X-WR-CALNAME:${calendarName}`);
+
+    lines.push(
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//YourApp//Notifications//EN',
+      `X-WR-CALNAME:${esc(calendarName)}`
+    );
+
     boundaries.forEach((b, idx) => {
-      const d = new Date(b.date + 'T00:00:00Z');
-      d.setUTCDate(d.getUTCDate() - 1); // day-before reminder
-      const dayBefore = d.toISOString().slice(0, 10);
-      const uid = `noty-${idx}-${dayBefore}@yourapp`;
-      const summary = b.title || (b.type === 'begin' ? 'Cycle begins tomorrow' : 'Cycle ends tomorrow');
-      lines.push(
-        'BEGIN:VEVENT',
-        `UID:${uid}`,
-        `DTSTAMP:${dtstamp}`,
-        `DTSTART:${fmtICSDate(dayBefore)}`,
-        `DTEND:${fmtICSDate(dayBefore)}`,
-        `SUMMARY:${summary}`,
-        'TRANSP:TRANSPARENT',
-        'END:VEVENT'
-      );
+      // We create an all-day reminder on the day BEFORE the boundary
+      const boundary = new Date(b.date + 'T00:00:00Z');
+      boundary.setUTCDate(boundary.getUTCDate() - 1);
+      const dayBeforeISO = boundary.toISOString().slice(0, 10);
+      const dayAfterISO  = plusDaysISO(dayBeforeISO, 1); // DTEND is end-exclusive
+
+      const uid = `noty-${idx}-${dayBeforeISO}@yourapp`;
+     // Try to extract supplement name from boundary title if present
+let suppName = '';
+if (b.title) {
+  // Often titles look like "Creatine: ON begins tomorrow"
+  suppName = b.title.split(':')[0].trim();
+}
+
+// Build a nicer message
+let summary;
+if (b.type === 'begin') {
+  summary = suppName
+    ? `Your ${suppName} cycle begins tomorrow`
+    : 'Your cycle begins tomorrow';
+} else if (b.type === 'end') {
+  summary = suppName
+    ? `${suppName} cycle ends tomorrow`
+    : 'Cycle ends tomorrow';
+} else {
+  // Fallback to whatever title exists
+  summary = b.title || 'Cycle reminder';
+}
+
+lines.push(
+  'BEGIN:VEVENT',
+  `UID:${uid}`,
+  `DTSTAMP:${dtstamp}`,
+  `DTSTART;VALUE=DATE:${fmtYMD(dayBeforeISO)}`,
+  `DTEND;VALUE=DATE:${fmtYMD(dayAfterISO)}`,
+  `SUMMARY:${esc(summary)}`,
+  'TRANSP:TRANSPARENT',
+  'END:VEVENT'
+);
+
     });
+
     lines.push('END:VCALENDAR');
     return lines.join('\r\n');
   }
 
-  function handleICS() {
-    const btn = $('#notificationsIcsBtn');
-    if (!btn) return;
-    btn.addEventListener('click', async () => {
-      btn.disabled = true;
-      const t = btn.textContent;
-      btn.textContent = 'Building .ics…';
-      try {
-        const boundaries = await fetchCycleBoundaries();
-        if (!Array.isArray(boundaries) || boundaries.length === 0) {
-          alert('No cycle data available to build the calendar. Make sure your app provides cycle boundaries.');
-          return;
-        }
-        const ics = buildICS(boundaries, 'Cycle Notifications (Next Year)');
-        const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'cycle-notifications-next-year.ics';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = t;
+function handleICS() {
+  const btn = $('#notificationsIcsBtn');
+  if (!btn) return;
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    const t = btn.textContent;
+    btn.textContent = 'Building .ics…';
+    try {
+      const boundaries = await fetchCycleBoundaries();
+      if (!Array.isArray(boundaries) || boundaries.length === 0) {
+        alert('No cycle data available to build the calendar. Make sure your app provides cycle boundaries.');
+        return;
       }
-    });
+      const ics = buildICS(boundaries, 'Cycle Notifications (Next Year)');
+      const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'cycle-notifications-next-year.ics';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
 
-    if (!window.getCycleBoundaries && !window.getCyclesForNextYear && !Array.isArray(window.__CYCLE_BOUNDARIES__)) {
-      btn.title = 'Requires cycle data from the app to generate events.';
+      //auto-close the modal
+      setTimeout(() => {
+        closeModal();
+      }, 1000);
+
+    } finally {
+      btn.disabled = false;
+      btn.textContent = t;
     }
+  });
+
+  if (
+    !window.getCycleBoundaries &&
+    !window.getCyclesForNextYear &&
+    !Array.isArray(window.__CYCLE_BOUNDARIES__)
+  ) {
+    btn.title = 'Requires cycle data from the app to generate events.';
   }
+}
+
 
   document.addEventListener('DOMContentLoaded', () => {
     wireOpeners();
