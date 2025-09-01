@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "description": "A simple supplement tracker application.",
   "main": "js/main.js",
+  "type": "module",
   "scripts": {
     "start": "http-server -c-1 ."
   },
   "dependencies": {
-    "http-server": "^14.1.1",
-    "nodemailer": "^7.0.6"
+    "http-server": "^14.1.1"
   }
 }
