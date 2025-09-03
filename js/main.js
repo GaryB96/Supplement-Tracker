@@ -31,6 +31,104 @@ async function openNotificationsModal() {
 }
 function closeNotificationsModal(){ el("notificationsModal")?.classList.add("hidden"); }
 
+// simple debounce
+function debounce(fn, wait){ let t; return function(...args){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,args), wait); }; }
+
+function setNotesButtonVisibility(isLoggedIn) {
+  const btn = document.getElementById("notesBtn");
+  if (!btn) return;
+  btn.style.display = isLoggedIn ? "inline-block" : "none"; btn.disabled = !isLoggedIn;
+}
+
+function openNotesModal() {
+  if (!currentUser) return;
+
+  const modal  = document.getElementById("notesModal");
+  const status = document.getElementById("notesStatus");
+  const ta     = document.getElementById("notesTextarea");
+  if (!modal || !ta) return;
+
+  modal.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+  if (status) status.textContent = "Loading…";
+
+  // Helper for a consistent ref
+  const notesRef = () => doc(db, "users", currentUser.uid, "notes", "personal");
+
+  // Load latest
+  (async () => {
+    try {
+      const snap = await getDoc(notesRef());
+      const data = snap.exists() ? snap.data() : null;
+      ta.value = (data && typeof data.notesText === "string") ? data.notesText : "";
+      if (status) status.textContent = (data && data.notesUpdatedAt)
+        ? ("Saved " + new Date(data.notesUpdatedAt).toLocaleTimeString())
+        : "Loaded.";
+    } catch (err) {
+      console.error("[notes] load failed:", err);
+      if (status) status.textContent = "Could not load notes.";
+    }
+  })();
+
+  // Save helper: always re-query the current textarea to avoid stale references
+  const saveNow = async () => {
+    if (!currentUser) return;
+    const curTa = document.getElementById("notesTextarea");
+    if (!curTa) return;
+    if (status) status.textContent = "Saving…";
+    try {
+      await setDoc(notesRef(), {
+        notesText: curTa.value || "",
+        notesUpdatedAt: new Date().toISOString()
+      }, { merge: true });
+      if (status) status.textContent = "Saved just now";
+    } catch (e) {
+      console.error("[notes] save failed:", e);
+      if (status) status.textContent = "Save failed. Retry (Ctrl/Cmd+S).";
+    }
+  };
+
+  // Debounced handler
+  const debouncedSave = (function(fn, wait){
+    let t; return function(){
+      clearTimeout(t); t = setTimeout(fn, wait);
+    };
+  })(saveNow, 800);
+
+  // Clean up any old handlers before attaching new ones
+  if (!window._notesHandlers) window._notesHandlers = {};
+  const H = window._notesHandlers;
+  // Remove previous
+  if (H.input)   ta.removeEventListener("input", H.input);
+  if (H.blur)    ta.removeEventListener("blur", H.blur);
+  if (H.keydown) modal.removeEventListener("keydown", H.keydown);
+
+  // Add fresh
+  H.input = () => { if (status) status.textContent = "Saving…"; debouncedSave(); };
+  H.blur  = () => { saveNow(); };
+  H.keydown = (ev) => {
+    if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "s") {
+      ev.preventDefault(); saveNow();
+    }
+  };
+  ta.addEventListener("input", H.input);
+  ta.addEventListener("blur", H.blur);
+  modal.addEventListener("keydown", H.keydown);
+
+  // Ensure the close button flushes one final save
+  const closeBtn = document.getElementById("closeNotesBtn");
+  if (closeBtn) {
+    closeBtn.onclick = async (e) => {
+      e.preventDefault();
+      await saveNow();
+      closeNotesModal();
+    };
+  }
+}
+function closeNotesModal(){ const m=document.getElementById("notesModal"); if(m) m.classList.add("hidden"); document.body.style.overflow=""; }
+
+async function saveNotes(){ /* deprecated: autosave handles this */ }
+
 async function saveNotifications() {
   if (!currentUser) return;
   const chk = el("notifyEmailChk");
@@ -206,10 +304,54 @@ document.addEventListener("DOMContentLoaded", () => {
   const prevBtn = document.getElementById("prevMonth");
   const nextBtn = document.getElementById("nextMonth");
 
+  // Notes modal wiring
+  const notesBtn = document.getElementById("notesBtn");
+  const closeNotesBtn = document.getElementById("closeNotesBtn");
+  const saveNotesBtn = document.getElementById("saveNotesBtn");
+  if (notesBtn) {
+    notesBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      openNotesModal();
+    });
+  }
+  if (closeNotesBtn) {
+    closeNotesBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      closeNotesModal();
+    });
+  }
+  if (saveNotesBtn) {
+    saveNotesBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      saveNotes();
+    });
+  }
+  // --- Month navigation ---
+  if (prevBtn && nextBtn) {
+    prevBtn.addEventListener("click", async () => {
+      currentMonth--;
+      if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
+      }
+      await refreshCalendar();
+    });
+
+    nextBtn.addEventListener("click", async () => {
+      currentMonth++;
+      if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
+      }
+      await refreshCalendar();
+    });
+  }
+
+})
+
   // --- Profile dropdown ---
   const profileButton = document.getElementById("profileButton");
   const dropdownContainer = profileButton ? profileButton.closest(".dropdown") : null;
-
   const resetPasswordLink = document.getElementById("resetPassword");
   const deleteAccountLink = document.getElementById("deleteAccount");
 
@@ -270,28 +412,24 @@ document.addEventListener("DOMContentLoaded", () => {
     if (user) {
       document.body.classList.add("logged-in");
       currentUser = user;
-
+      setNotesButtonVisibility(true);
       const event = new CustomEvent("user-authenticated", { detail: user });
       window.dispatchEvent(event);
 
       await refreshCalendar();
-    } else {
+    
+      setNotesButtonVisibility(true);
+} else {
       document.body.classList.remove("logged-in");
       calendarEl.innerHTML = "";
       labelEl.textContent = "";
+      
+      setNotesButtonVisibility(false);
+setNotesButtonVisibility(false);
     }
-  });
+    await refreshCalendar();
+  });      
 
-  // --- Month navigation ---
-  if (prevBtn && nextBtn) {
-    prevBtn.addEventListener("click", async () => {
-      currentMonth--;
-      if (currentMonth < 0) {
-        currentMonth = 11;
-        currentYear--;
-      }
-      await refreshCalendar();
-    });
 
     nextBtn.addEventListener("click", async () => {
       currentMonth++;
@@ -301,7 +439,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       await refreshCalendar();
     });
-  }
 
   // --- Login / Signup form ---
   if (loginForm) {
@@ -352,7 +489,6 @@ document.addEventListener("DOMContentLoaded", () => {
       window.location.href = "index.html";
     });
   }
-});
 
 // Helpers to keep everything in LOCAL time (no UTC parsing)
 function parseLocalDate(ymd) {
