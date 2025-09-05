@@ -1,20 +1,82 @@
-import { login, signup, logout, deleteAccount, monitorAuthState, changePassword, resetPassword } from "./auth.js";
+import { login, signup, logout, deleteAccount, monitorAuthState, changePassword, resetPassword, resendVerification } from "./auth.js";
 import { renderCalendar } from "./calendar.js";
 import { fetchSupplements } from "./supplements.js";
 import { EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
 import { auth } from "./firebaseConfig.js";
-
-// Inline status helper
-function showInlineStatus(message, type = "info") {
-  const el = document.getElementById("auth-status") || document.getElementById("app-status");
-  if (!el) { console[type === "error" ? "error" : "log"](message); return; }
-  el.classList.remove("error","success","warn","info");
-  if (type) el.classList.add(type);
-  el.textContent = message;
-}
-
-
 document.documentElement.classList.add("auth-pending");
+
+// Inline status helper (avoids browser alert banners)
+// Inline status helper (avoids browser alert banners)
+
+// Accessible toast helper
+function showToast(message, type = "info", opts = {}) {
+  const container = document.getElementById("toast-container");
+  if (!container) { return showInlineStatus(message, type); }
+
+  const toast = document.createElement("div");
+  toast.className = "toast " + (type || "info");
+  toast.setAttribute("role", "status");
+  toast.setAttribute("aria-live", "polite");
+  toast.tabIndex = 0;
+
+  const row = document.createElement("div");
+  row.className = "toast-row";
+
+  const msg = document.createElement("div");
+  msg.className = "toast-msg";
+  msg.textContent = message;
+
+  const close = document.createElement("button");
+  close.className = "toast-close";
+  close.setAttribute("aria-label", "Close notification");
+  close.innerHTML = "&times;";
+  close.addEventListener("click", () => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 200);
+  });
+
+  row.appendChild(msg);
+  row.appendChild(close);
+  toast.appendChild(row);
+  container.appendChild(toast);
+
+  // animate in
+  requestAnimationFrame(() => toast.classList.add("show"));
+
+  const ttl = opts.ttl ?? 5000;
+  if (ttl > 0) setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 200);
+  }, ttl);
+}
+function showInlineStatus(message, type = "info") {
+  const el =
+    document.getElementById("auth-status") ||
+    document.getElementById("app-status");
+
+  if (!el) {
+    console[type === "error" ? "error" : "log"](message);
+    return;
+  }
+
+  // Clear previous state
+  el.classList.remove("error", "success", "warn", "info");
+  if (type) el.classList.add(type);
+
+  // Set text and show the pill
+  el.textContent = message || "";
+  el.style.display = message ? "inline-block" : "none";
+
+  // Auto-hide after 8s
+  clearTimeout(el._hideTimer);
+  if (message) {
+    el._hideTimer = setTimeout(() => {
+      el.style.display = "none";
+      el.textContent = "";
+      el.classList.remove("error", "success", "warn", "info");
+    }, 8000);
+  }
+}
 
 // ==== Notifications UI & ICS Export ====
 import { db } from "./firebaseConfig.js";
@@ -381,11 +443,16 @@ if (nextBtn) {
     resetPasswordLink.addEventListener("click", async (e) => {
       e.preventDefault();
       try {
-        await resetPassword();
-        showInlineStatus("Password reset email sent (check your inbox).", "error");
+        const result = await resetPassword();
+        showToast(result.message, "success");
       } catch (err) {
         console.error("Password reset error:", err);
-        showInlineStatus("Could not send reset email: " + (err?.message || err), "error");
+        if (err && err.code === "auth/missing-email") {
+          showInlineStatus("Please enter your email first.", "error");
+        } else {
+          // Keep UX non-enumerating even on errors
+          showInlineStatus("If an account exists for that email, a reset link has been sent. Please check your inbox and spam.", "success");
+        }
       }
     });
   }
@@ -417,6 +484,7 @@ if (nextBtn) {
   }
 
   // --- Auth state → show/hide app && render calendar ---
+
   monitorAuthState(async user => {
     if (user) {
       document.body.classList.add("logged-in");
@@ -470,11 +538,12 @@ if (nextBtn) {
       const email = signinEmail?.value?.trim();
       if (!email) { showInlineStatus("Enter your email above, then click Forgot password.", "error"); return; }
       try {
-        await resetPassword(email);
-        showInlineStatus("Password reset email sent. Please check your inbox.", "success");
+        const result = await resetPassword(email);
+        showInlineStatus(result.message, "success");
       } catch (err) {
-        showInlineStatus("Could not send reset email: " + (err?.message || err), "error");
         console.error(err);
+        // Keep UX non-enumerating even on errors
+        showInlineStatus("If an account exists for that email, a reset link has been sent. Please check your inbox and spam.", "success");
       }
     });
   }
@@ -486,9 +555,8 @@ if (nextBtn) {
       const password = signinPass?.value || "";
       if (!email || !password) { showInlineStatus("Please enter both email and password.", "error"); return; }
       try {
-        await login(email, password);
-        // No reload; monitorAuthState flips the UI, preventing flicker
-        showInlineStatus("Signed in.", "success");
+        await login(email, password);            // monitorAuthState will flip the UI
+        showInlineStatus("Signed in.", "success");  // optional
       } catch (error) {
         showInlineStatus("Login failed: " + (error?.message || ""), "error");
         console.error("Login error:", error);
@@ -501,6 +569,7 @@ if (nextBtn) {
   const signupEmail = document.getElementById("signupEmail");
   const signupPass = document.getElementById("signupPassword");
   const signupPass2 = document.getElementById("signupPassword2");
+  const resendBtn = document.getElementById("resendVerificationBtn");
 
   if (signupForm) {
     signupForm.addEventListener("submit", async (e) => {
@@ -516,19 +585,32 @@ if (nextBtn) {
       } catch (err) {
         if (err && err.code === "auth/email-not-verified") {
           showInlineStatus("Account created. We sent a verification email to " + email + ". Please click the link to activate your account.", "success");
+          if (resendBtn) resendBtn.style.display = "inline-block";
           setTab("signin");
           return;
         }
         if (err && err.code === "auth/email-already-in-use") {
-          showInlineStatus("An account with this email already exists. Please sign in or use ‘Forgot password’ to reset it.", "error");
-          const tabBtn = document.querySelector('.tabs .tab[data-tab="signin"]');
-          if (tabBtn) tabBtn.click();
-          const emailField = document.getElementById("signinEmail");
-          if (emailField && email) emailField.value = email;
-          return;
+  showInlineStatus("An account with this email already exists. Please sign in or use ‘Forgot password’ to reset it.", "error");
+  const tabBtn = document.querySelector('.tabs .tab[data-tab="signin"]');
+  if (tabBtn) tabBtn.click();
+  const emailField = document.getElementById("signinEmail");
+  if (emailField && email) emailField.value = email;
+  return;
+} else {
+          showInlineStatus("Signup failed: " + (err?.message || ""), "error");
         }
-        showInlineStatus("Signup failed: " + (err?.message || ""), "error");
         console.error("Signup error:", err);
+      }
+    });
+  }
+
+  if (resendBtn) {
+    resendBtn.addEventListener("click", async () => {
+      try {
+        await resendVerification();
+        showInlineStatus("Verification email sent. Please check your inbox.", "success");
+      } catch (e) {
+        showInlineStatus(e?.message || "Could not send verification email.", "error");
       }
     });
   }
@@ -536,7 +618,7 @@ if (nextBtn) {
   if (logoutBtn) {
     logoutBtn.addEventListener("click", async () => {
       await logout();
-      showInlineStatus("You have been logged out.", "error");
+      showInlineStatus("You have been logged out.", "info");
       window.location.href = "index.html";
     });
   }
@@ -654,14 +736,14 @@ async function refreshCalendar() {
         const credential = EmailAuthProvider.credential(user.email, password);
         await reauthenticateWithCredential(user, credential);
         await deleteAccount(user);
-        showInlineStatus("Your account has been deleted.", "error");
+        showInlineStatus("Your account has been deleted.", "success");
         window.location.href = "index.html";
       } catch (error) {
         console.error(error);
         if (error.code === "auth/wrong-password") {
           showInlineStatus("Incorrect password. Please try again.", "error");
         } else if (error.code === "auth/too-many-requests") {
-          showInlineStatus("Too many attempts. Please try again later.", "error");
+          showInlineStatus("Too many attempts. Please try again later.", "warn");
         } else {
           showInlineStatus("An error occurred. " + (error.message || ""), "error");
         }
