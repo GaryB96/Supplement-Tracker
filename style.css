@@ -568,3 +568,11 @@ body:not(.logged-in) #accountActions { display: none; }
   max-width: 92vw;        /* never overflow on small screens */
   height: clamp(64px, 18vw, 184px);  /* phone → desktop scaling (max stays ~your current size) */
 }
+
+@media (max-width: 480px) {
+  #authLogo,
+  .logo-wrap > svg {
+    padding-left: 0;      /* no padding on small screens */
+    height: clamp(48px, 22vw, 120px);  /* smaller on small screens */
+  }
+}
