@@ -127,33 +127,54 @@ function editSupplement(id) {
   const supplement = supplements.find((s) => s.id === id);
   if (!supplement) return;
 
-  editingSupplementId = id;
+  // Tell the modal we're editing this doc
+  window.SUPP_MODAL_CTX = { mode: "edit", id };
 
-  document.getElementById("nameInput").value = supplement.name || "";
-  document.getElementById("dosageInput").value = supplement.dosage || "";
+  // Open the modal by clicking the existing "Add Supplement" button
+  const openBtn = document.getElementById("addSupplementBtn");
+  if (openBtn) {
+    openBtn.click();
+  }
 
-  const timeCheckboxes = getTimeCheckboxes();
-  timeCheckboxes.forEach((cb) => {
-    cb.checked = Array.isArray(supplement.time) && supplement.time.includes(cb.value);
+  // Prefill modal fields
+  const formModal = document.getElementById("supplementModalForm") || document.querySelector("#supplementModal form");
+  if (!formModal) return;
+
+  const q = (sel) => formModal.querySelector(sel);
+
+  const nameEl   = q("#suppName");
+  const dosageEl = q("#suppDosage");
+  if (nameEl)   nameEl.value   = supplement.name || "";
+  if (dosageEl) dosageEl.value = supplement.dosage || "";
+
+  // Times checkboxes in modal
+  const selectedTimes = Array.isArray(supplement.times)
+    ? supplement.times
+    : (Array.isArray(supplement.time) ? supplement.time : []);
+  formModal.querySelectorAll('input[name="time"]').forEach((cb) => {
+    cb.checked = selectedTimes.includes(cb.value);
   });
 
-  const hasCycle = !!(
-    supplement.cycle &&
-    (Number(supplement.cycle["on"]) > 0 || Number(supplement.cycle["off"]) > 0)
-  );
-  if (cycleCheckbox) cycleCheckbox.checked = hasCycle;
-  if (cycleDetails) cycleDetails.classList.toggle("hidden", !hasCycle);
+  // Cycle fields
+  const chk   = q("#suppCycleChk");
+  const onEl  = q("#suppDaysOn");
+  const offEl = q("#suppDaysOff");
+  const startEl = q("#suppCycleStart");
+  const hasCycle = !!(supplement.cycle && (Number(supplement.cycle.on) > 0 || Number(supplement.cycle.off) > 0));
+  if (chk) {
+    chk.checked = hasCycle;
+    // Let existing UI logic show/hide the cycle section
+    chk.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+  if (onEl)   onEl.value   = hasCycle ? Number(supplement.cycle.on)  : "";
+  if (offEl)  offEl.value  = hasCycle ? Number(supplement.cycle.off) : "";
+  if (startEl) startEl.value = hasCycle ? (supplement.startDate || supplement.cycle.startDate || "") : "";
 
-  const onInput = document.getElementById("onDaysInput");
-  const offInput = document.getElementById("offDaysInput");
-  const startInput = document.getElementById("cycleStartInput");
-  if (onInput) onInput.value = hasCycle ? Number(supplement.cycle["on"]) : "";
-  if (offInput) offInput.value = hasCycle ? Number(supplement.cycle["off"]) : "";
-  if (startInput)
-    startInput.value = hasCycle
-      ? supplement.cycle["startDate"] || supplement.startDate || ""
-      : "";
+  // Optional color
+  const colorEl = q("#suppColor");
+  if (colorEl) colorEl.value = supplement.color || (window.pickColor ? window.pickColor(supplement.name) : "#cccccc");
 
+  // Optionally show a cancel-edit button if you have one
   if (cancelEditBtn) cancelEditBtn.classList.remove("hidden");
 }
 
@@ -185,6 +206,8 @@ async function refreshData() {
     console.error("❌ Failed to fetch supplements:", error);
   }
 }
+window.refreshSuppSummary = refreshData;
+
 function openNotes() {
   if (!currentUser?.uid) return;
   notesModal.classList.remove("hidden");
@@ -242,7 +265,11 @@ function renderSupplements() {
   const ORDER = ["Morning", "Afternoon", "Evening", "Unscheduled"];
   const groups = { Morning: [], Afternoon: [], Evening: [], Unscheduled: [] };
   (supplements || []).forEach((supplement) => {
-    const times = Array.isArray(supplement && supplement.time) ? supplement.time : [];
+    const times = Array.isArray(supplement?.time)
+  ? supplement.time
+  : Array.isArray(supplement?.times)
+    ? supplement.times
+    : [];
     const normalized = times.map(norm).map((t) =>
       t.startsWith("m") ? "morning" : t.startsWith("a") ? "afternoon" : t.startsWith("e") ? "evening" : ""
     ).filter(Boolean);
@@ -278,7 +305,7 @@ function renderSupplements() {
     const actions = document.createElement("div");
     actions.className = "actions";
     const editBtn = document.createElement("button");
-    editBtn.className = "edit-btn";
+    editBtn.className = "edit-btn btn-edit-supp";
     editBtn.dataset.id = (supplement && supplement.id) ? supplement.id : "";
     editBtn.textContent = "Edit";
     const delBtn = document.createElement("button");

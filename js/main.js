@@ -1,9 +1,31 @@
+import { showToast } from "./toast.js";
 import { login, signup, logout, deleteAccount, monitorAuthState, changePassword, resetPassword, resendVerification } from "./auth.js";
 import { renderCalendar } from "./calendar.js";
-import { fetchSupplements } from "./supplements.js";
+import { fetchSupplements, addSupplement } from "./supplements.js";
 import { EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
 import { auth } from "./firebaseConfig.js";
+import { updateSupplement } from "./supplements.js";
+// ===== Color helper for supplements (stable per-name) =====
+function pickColor(seed) {
+  const palette = ["#2196F3", "#FF9800", "#9C27B0", "#E91E63", "#4CAF50", "#F44336", "#3F51B5", "#009688"];
+  if (!seed) return palette[Math.floor(Math.random() * palette.length)];
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = ((hash << 5) - hash + seed.charCodeAt(i)) >>> 0;
+  }
+  return palette[hash % palette.length];
+}
+// Also expose globally in case other files expect window.pickColor
+try { window.pickColor = window.pickColor || pickColor; } catch {}
+// ===== End color helper =====
+
 document.documentElement.classList.add("auth-pending");
+
+// One global edit/add context
+window.SUPP_MODAL_CTX = window.SUPP_MODAL_CTX || { mode: "add", id: null };
+
+// Modal State - edit vs add
+let SUPP_MODAL_CTX = { mode: "add", id: null };
 
 // Inline status helper (avoids browser alert banners)
 // Inline status helper (avoids browser alert banners)
@@ -66,11 +88,17 @@ function closeNotificationsModal(){ el("notificationsModal")?.classList.add("hid
 // simple debounce
 function debounce(fn, wait){ let t; return function(...args){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,args), wait); }; }
 
+
 function setNotesButtonVisibility(isLoggedIn) {
-  const btn = document.getElementById("notesBtn");
-  if (!btn) return;
-  btn.style.display = isLoggedIn ? "inline-block" : "none"; btn.disabled = !isLoggedIn;
+  const sidebar = document.getElementById("sidebar");
+  if (!sidebar) return;
+  if (isLoggedIn) {
+    sidebar.classList.remove("hidden");
+  } else {
+    sidebar.classList.add("hidden");
+  }
 }
+
 
 function openNotesModal() {
   if (!currentUser) return;
@@ -358,7 +386,7 @@ document.addEventListener("DOMContentLoaded", () => {
       saveNotes();
     });
   }
-  // --- Month navigation ---
+
 // --- Month navigation ---
 if (prevBtn) {
   prevBtn.addEventListener("click", async () => {
@@ -374,8 +402,6 @@ if (nextBtn) {
     await refreshCalendar();
   });
 }
-
-
 })
 
   // --- Profile dropdown ---
@@ -403,6 +429,7 @@ if (nextBtn) {
       try {
         const result = await resetPassword();
         showInlineStatus(result.message, "success");
+    try { showToast(result.message, "success", 5000); } catch(e) {}
       } catch (err) {
         console.error("Password reset error:", err);
         if (err && err.code === "auth/missing-email") {
@@ -410,6 +437,7 @@ if (nextBtn) {
         } else {
           // Keep UX non-enumerating even on errors
           showInlineStatus("If an account exists for that email, a reset link has been sent. Please check your inbox and spam.", "success");
+        try { showToast("Password reset email sent. Check your inbox and spam.", "success", 5000); } catch(e) {}
         }
       }
     });
@@ -498,10 +526,12 @@ if (nextBtn) {
       try {
         const result = await resetPassword(email);
         showInlineStatus(result.message, "success");
+    try { showToast(result.message, "success", 5000); } catch(e) {}
       } catch (err) {
         console.error(err);
         // Keep UX non-enumerating even on errors
         showInlineStatus("If an account exists for that email, a reset link has been sent. Please check your inbox and spam.", "success");
+        try { showToast("Password reset email sent. Check your inbox and spam.", "success", 5000); } catch(e) {}
       }
     });
   }
@@ -516,7 +546,7 @@ if (nextBtn) {
         await login(email, password);            // monitorAuthState will flip the UI
         showInlineStatus("Signed in.", "success");  // optional
       } catch (error) {
-        showInlineStatus("Login failed: " + (error?.message || ""), "error");
+        showInlineStatus("Login failed: incorrect email or password");
         console.error("Login error:", error);
       }
     });
@@ -711,3 +741,195 @@ async function refreshCalendar() {
     });
   }
 }
+
+// === Add New Supplement Modal (self-contained) ===
+document.addEventListener("DOMContentLoaded", () => {
+  const openBtn = document.getElementById("addSupplementBtn");
+  const modal   = document.getElementById("supplementModal");
+  if (!openBtn || !modal) return;
+
+  // Prefer the dedicated modal form id; else fall back to any form inside the modal
+  const form = document.getElementById("supplementModalForm") || modal.querySelector("form");
+  if (!form) return;
+
+  // ---------- Focus trap + open/close ----------
+  let lastFocusedEl = null;
+  const focusableSelector = `a[href],area[href],input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),button:not([disabled]),[tabindex]:not([tabindex="-1"])`;
+
+  function trapFocus(e) {
+    if (e.key !== "Tab") return;
+    const focusables = Array.from(modal.querySelectorAll(focusableSelector))
+      .filter(el => el.offsetParent !== null);
+    if (!focusables.length) return;
+    const first = focusables[0];
+    const last  = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+
+  function openModal() {
+    lastFocusedEl = document.activeElement;
+    modal.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+    modal.addEventListener("keydown", trapFocus);
+    const first = modal.querySelector(focusableSelector);
+    if (first) first.focus();
+  }
+
+  function closeModal() {
+    modal.classList.add("hidden");
+    document.body.style.overflow = "";
+    modal.removeEventListener("keydown", trapFocus);
+    if (lastFocusedEl && typeof lastFocusedEl.focus === "function") lastFocusedEl.focus();
+  }
+
+  // Open
+  openBtn.addEventListener("click", (e) => { e.preventDefault(); openModal(); });
+
+  // Close on backdrop / explicit close targets
+  modal.addEventListener("click", (e) => {
+    if (e.target.matches("[data-close-modal]")) {
+      e.preventDefault();
+      closeModal();
+    }
+  });
+
+  // Close on ESC
+  window.addEventListener("keydown", (e) => {
+    if (!modal.classList.contains("hidden") && e.key === "Escape") closeModal();
+  });
+
+  // ---------- Cycle UI toggle (non-collapsing by default) ----------
+  const cycleChk  = form.querySelector("#suppCycleChk");
+  const startWrap = form.querySelector("#suppCycleStartWrap");
+  if (cycleChk && startWrap) {
+    // Prefer .is-hidden (keeps space reserved); fallback to .hidden if that's what you have
+    const hideClass = startWrap.classList.contains("is-hidden") ? "is-hidden" : "hidden";
+    const sync = () => {
+      if (hideClass === "is-hidden") {
+        startWrap.classList.toggle("is-hidden", !cycleChk.checked);
+      } else {
+        // If you must use .hidden, also ensure your CSS preserves layout; otherwise this will reflow.
+        startWrap.classList.toggle("hidden", !cycleChk.checked);
+      }
+    };
+    cycleChk.addEventListener("change", sync);
+    sync();
+  }
+
+// ---------- Submit (writes to Firestore and refreshes UI) ----------
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const uid = auth?.currentUser?.uid || window.currentUser?.uid;
+  if (!uid) {
+    try { typeof showInlineStatus === "function" && showInlineStatus("Please sign in first.", "error"); } catch {}
+    return;
+  }
+
+  // Collect values from the modal
+  const name   = form.querySelector("#suppName")?.value?.trim() || "";
+  const dosage = form.querySelector("#suppDosage")?.value?.trim() || "";
+
+  const times = Array.from(form.querySelectorAll('input[name="time"]:checked'))
+    .map(cb => cb.value); // e.g., ["Morning","Evening"]
+
+  const onCycle   = !!form.querySelector("#suppCycleChk")?.checked;
+  const startDate = onCycle ? (form.querySelector("#suppCycleStart")?.value || null) : null;
+  const daysOn    = onCycle ? (form.querySelector("#suppDaysOn")?.value || "") : "";
+  const daysOff   = onCycle ? (form.querySelector("#suppDaysOff")?.value || "") : "";
+
+  // Ensure color (important for summary + calendar)
+  let color = onCycle ? pickColor(name) : "#cccccc";
+
+  const data = {
+    name,
+    dosage,
+    times,
+    cycle: onCycle ? { on: daysOn, off: daysOff } : null,
+    startDate,
+    color
+  };
+
+    // ********* READ CONTEXT FROM WINDOW *********
+  const ctx = (window.SUPP_MODAL_CTX || { mode: "add", id: null });
+
+  try {
+    if (ctx.mode === "edit" && ctx.id) {
+      await updateSupplement(uid, ctx.id, data);   // update existing doc
+    } else {
+      await addSupplement(uid, data);              // create new doc
+    }
+
+    // Refresh UI
+    if (typeof window.refreshSuppSummary === "function") {
+      await window.refreshSuppSummary();
+    } else if (typeof window.refreshCalendar === "function") {
+      await window.refreshCalendar();
+    }
+
+    // Reset + close
+    form.reset();
+    closeModal();
+
+    // ********* RESET CONTEXT *********
+    window.SUPP_MODAL_CTX = { mode: "add", id: null };
+
+  } catch (err) {
+    console.error("Save failed:", err);
+    try {
+      typeof showInlineStatus === "function" &&
+        showInlineStatus(err?.message || "Failed to save supplement.", "error");
+    } catch {}
+  }
+});
+
+function getModalValues() {
+  const name = document.querySelector("#supp-name").value.trim();
+  const dosage = document.querySelector("#supp-dosage").value.trim();
+  const times = getTimesUI(); // <-- read from your chips/times control
+
+  const onCycle = document.querySelector("#cycle-toggle").checked;
+  const startDate = (document.querySelector("#supp-start-date").value || "").trim();
+
+  let cycle = null;
+  if (onCycle) {
+    const on = parseInt(document.querySelector("#cycle-days-on").value, 10) || 0;
+    const off = parseInt(document.querySelector("#cycle-days-off").value, 10) || 0;
+    cycle = { on, off };
+  }
+
+  const colorInput = document.querySelector("#supp-color");
+  const color = colorInput ? (colorInput.value || "").trim() : null;
+
+  return { name, dosage, times, cycle, startDate, color };
+}
+
+document.addEventListener("click", async (e) => {
+  const editBtn = e.target.closest(".btn-edit-supp");
+  if (!editBtn) return;
+
+  const id = editBtn.dataset.id;
+  if (!id) return;
+
+  // Get the item from your in-memory store OR fetch it.
+  // Prefer your existing list in memory to avoid 2nd read:
+  const supp = getSupplementById(id); // implement or use your store
+
+  if (!supp) return;
+
+  // Enter edit mode and prefill
+  SUPP_MODAL_CTX = { mode: "edit", id };
+  setModalValues({
+    name: supp.name,
+    dosage: supp.dosage,
+    times: supp.times ?? (supp.time ? [supp.time] : []), // back-compat
+    cycle: supp.cycle || null,
+    startDate: supp.startDate || "",
+    color: supp.color || pickColor?.(supp.name) || "#cccccc"
+  });
+
+  openSupplementModal(); // your existing function to show the modal
+});
+
+});

@@ -80,21 +80,24 @@
 </div>
 </div>
 <body>
-<div id="accountActions">
-<button class="logout-button" id="logoutBtn">Logout</button>
-<!-- Profile dropdown -->
-<div class="dropdown">
+
+<aside id="sidebar" class="sidebar hidden" role="navigation" aria-label="App controls">
+  <button id="logoutBtn" class="sidebar-btn">Logout</button>
+  <!-- Account Options dropdown -->
+  <div class="dropdown">
 <button class="profile-button" id="profileButton">Account Options</button>
 <div class="dropdown-content" id="profileDropdown">
 <a href="#" id="resetPassword">Reset Password</a>
 <a href="#" id="deleteAccount">Delete Account</a>
 <a href="#" id="openNotifications">Download Calendar</a>
 </div>
+</div>
+  <button id="notesBtn" class="sidebar-btn">Notes</button>
+  <button id="addSupplementBtn" class="sidebar-btn">Add New Supplement</button>
+  <img id="icon" src="./assets/logo-icon.svg" alt="logo" class="banner-logo">
+</aside>
 </div><div aria-live="polite" class="status-pill" id="app-status" role="status"></div>
 </div>
-<header>
-<button id="notesBtn" style="display:none;">Notes</button>
-</header>
 <main>
 <!-- 🔐 Auth Section -->
 <section id="authContainer">
@@ -105,7 +108,6 @@
   </div>
   <p class="auth-desc">Ideal for busy students, educators, athletes, and anyone who wants a simple way to <br>organize routines, log intake, and keep track of supplement cycles.</p>
 </section>
-
 <div aria-label="Account access" class="auth-card" role="region">
 <div aria-label="Auth tabs" class="tabs" role="tablist">
 <button aria-controls="signinPane" aria-selected="true" class="tab active" data-tab="signin" id="tabSignIn" role="tab">Sign In</button>
@@ -162,30 +164,11 @@
 </div>
 </div>
 <form id="supplementForm">
-<input id="nameInput" placeholder="Supplement name" required=""/>
-<input id="dosageInput" placeholder="Dosage (e.g., 500mg)" required=""/>
-<!-- Unified checkbox group: desktop = 4 tiles across, mobile = stacked -->
-<div class="checkbox-tiles">
-<label class="check-item"><input name="time" type="checkbox" value="Morning"/> <span>Morning</span></label>
-<label class="check-item"><input name="time" type="checkbox" value="Afternoon"/> <span>Afternoon</span></label>
-<label class="check-item"><input name="time" type="checkbox" value="Evening"/> <span>Evening</span></label>
-<label class="check-item"><input id="cycleCheckbox" name="cycle" type="checkbox" value="1"/> <span>On a cycle</span></label>
-</div>
-<div class="hidden" id="cycleDetails">
-<input id="onDaysInput" placeholder="Days on" type="number"/>
-<input id="offDaysInput" placeholder="Days off" type="number"/>
-
-
-<div class="cycle-start-row">
-<label class="cycle-start-label" for="cycleStartInput">Start Date</label>
-<input id="cycleStartInput" type="date"/>
-</div>
-</div>
-<button type="submit">Add Supplement</button>
+  <h1>Supplement Summary</h1>
 </form>
 <div class="summary-container" id="supplementSummaryContainer"></div>
 <div id="calendarContainer">
-<h2>Cycle Calendar</h2>
+<h1>Cycle Calendar</h1>
 <div class="calendar-nav">
 <button id="prevBtn">◀ Previous</button>
 <span id="currentMonthLabel"></span>
@@ -213,6 +196,72 @@
 </div>
 </div>
 
+<!-- Add New Supplement Modal -->
+<div id="supplementModal" class="modal hidden" role="dialog" aria-modal="true"
+     aria-labelledby="supplementModalTitle" aria-describedby="supplementModalDesc" tabindex="-1">
+  <div class="modal-backdrop" data-close-modal></div>
+
+  <div class="modal-content" role="document">
+    <button class="modal-close" type="button" aria-label="Close" data-close-modal>×</button>
+
+    <h2 id="supplementModalTitle">Add New Supplement</h2>
+    <p id="supplementModalDesc" class="modal-desc">Fill in the details and click Save.</p>
+
+    <!-- CHANGED: unique form id -->
+    <form id="supplementModalForm">
+      <div class="form-row">
+        <label for="suppName">Name</label>
+        <input id="suppName" name="name" type="text" required />
+      </div>
+
+      <div class="form-row">
+        <label for="suppDosage">Dosage</label>
+        <input id="suppDosage" placeholder="e.g., 500mg" name="dosage" type="text" />
+      </div>
+
+<!-- Time of day -->
+<div class="form-row">
+  <div class="time-grid">
+    <label class="time-item">
+      <input type="checkbox" name="time" value="Morning">
+      <span>Morning</span>
+    </label>
+    <label class="time-item">
+      <input type="checkbox" name="time" value="Afternoon">
+      <span>Afternoon</span>
+    </label>
+    <label class="time-item">
+      <input type="checkbox" name="time" value="Evening">
+      <span>Evening</span>
+    </label>
+  </div>
+</div>
+<!-- Cycle toggle + Start Date -->
+<div class="form-row form-row-inline">
+  <label class="cycle-inline">
+    <input type="checkbox" id="suppCycleChk" name="cycle" value="1">
+    <span>On a cycle?</span>
+  </label>
+
+  <!-- keep space reserved; hide visually when off -->
+  <div id="suppCycleStartWrap" class="cycle-start is-hidden">
+    <input type="date" id="suppCycleStart" name="startDate">
+    <input type="number" id="suppDaysOn" placeholder="Days On" name="onDay">
+    <input type="number" id="suppDaysOff" placeholder="Days Off" name="offDay">
+    <span class="field-caption">Start Date</span>
+  </div>
+</div>
+
+
+      <!-- FOOTER: Save (left) + Cancel (right) -->
+      <div class="modal-actions modal-actions--split">
+        <button type="submit" id="saveSupplementBtn" class="btn-primary">Save</button>
+        <button type="button" id="cancelSupplementBtn" class="btn-secondary" data-close-modal>Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
   // Duplicate close button support
   document.getElementById('notificationsCloseBtnBottom')?.addEventListener('click', () => {
@@ -220,6 +269,7 @@
   });
 </script>
 </main>
+<script src="./js/toast.js" type="module"></script>
 <script src="./js/main.js" type="module"></script>
 <script src="./js/supplementsUI.js" type="module"></script>
 <script src="./js/notifications.js" type="module"></script>
