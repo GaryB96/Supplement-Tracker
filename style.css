@@ -913,14 +913,12 @@ body.logged-in main { margin-left: 220px; }
   --sidebar-accent: #22c55e;             /* green accent for border/tab */
   --sidebar-tab-width: 25px;             /* visible width when collapsed */
   --sidebar-tab-height: 28px;
-  --sidebar-tab-overhang: 0px;           /* not used with transform method */
 }
 
 /* Ensure the sidebar sits above content and can be collapsed via transform */
-.sidebar{
-  will-change: transform;
-  transition: transform 1.3s ease;
-  overflow: visible;
+#sidebar { transform: translateX(0); transition: transform 1.28s ease; }
+#sidebar[data-collapsed="true"] {
+  transform: translateX(calc(-100% + var(--sidebar-tab-width, 25px)));
 }
 
 /* Collapse: slide sidebar left, leaving tab width visible */
@@ -950,22 +948,65 @@ body.logged-in main { margin-left: 220px; }
 }
 
 /* When collapsed, bring the tab back flush with the sidebar edge */
-.sidebar[data-collapsed="true"] .sidebar-tab{
-  transform: translateX(100%);
-}
+#sidebar[data-collapsed="true"] .sidebar-tab { transform: translateX(100%); }
 
 /* Optional: rotate chevron on collapse */
 .sidebar .sidebar-tab .sidebar-tab-icon{ transition: transform 1.2s; }
-.sidebar[data-collapsed="true"] .sidebar-tab .sidebar-tab-icon{ transform: rotate(180deg); }
+.sidebar[data-collapsed="false"] .sidebar-tab .sidebar-tab-icon{ transform: rotate(180deg); }
 
 /* Phone tweaks: keep tab *inside* so it's guaranteed visible */
 @media (max-width: 600px){
   .sidebar .sidebar-tab{
     right: 0;
-    transform: translateX(0);           /* always inside on small screens */
+    transform: translateX(100%);           /* always inside on small screens */
   }
   :root{
-    --sidebar-tab-width: 40px;          /* bigger target for touch */
-    --sidebar-tab-height: 32px;
+    --sidebar-tab-width: 20px;          /* bigger target for touch */
+    --sidebar-tab-height: 25px;
   }
+  .summary-container.size-compact {
+  --card-min: 100px;
+  --card-gap: 6px;
+  --card-pad: 5px;
+  --card-font: 11px;
 }
+}
+
+.sidebar { transform: translateX(0); transition: transform 1.28s ease; }
+.sidebar[data-collapsed="true"] {
+  transform: translateX(calc(-100% + var(--sidebar-tab-width, 25px)));
+}
+/* keep tab flush on collapse */
+.sidebar[data-collapsed="true"] .sidebar-tab { transform: translateX(0); }
+/* main shifts only to the tab width when collapsed */
+body.sidebar-collapsed main {
+  margin-left: calc(var(--sidebar-tab-width, 25px) + 10px);
+  transition: margin-left 1.28s ease;
+}
+
+body.sidebar-collapsed main {
+  margin-left: calc(var(--sidebar-tab-width, 25px) + 10px);
+  transition: margin-left 1.28s ease;
+}
+
+/* --- Hard guarantee: collapse via body class too (higher specificity) --- */
+body.sidebar-collapsed #sidebar {
+  transform: translateX(calc(-100% + var(--sidebar-tab-width, 25px)));
+}
+
+/* Always animate margin-left */
+main {
+  margin-left: 0;
+  transition: margin-left 1.2s ease; /* animate both directions */
+}
+
+/* When collapsed, push content over a bit */
+body.sidebar-collapsed main {
+  margin-left: calc(var(--sidebar-tab-width, 25px) + 10px);
+}
+
+/* (Optional) sync the sidebar’s speed so they move together */
+#sidebar {
+  transition: transform 1.2s ease;
+}
+
