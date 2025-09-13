@@ -8,6 +8,23 @@ import { updateSupplement } from "./supplements.js";
 
 document.documentElement.classList.add("auth-pending");
 
+// Deterministic palette-based color picker shared by summary + calendar
+if (!window.pickColor) {
+  window.pickColor = function pickColor(seed) {
+    const palette = [
+      "#2196F3", "#FF9800", "#9C27B0", "#1EE92F",
+      "#E91E63", "#3F51B5", "#009688", "#795548"
+    ];
+    let h = 2166136261 >>> 0;
+    const s = String(seed || "");
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    const idx = Math.abs(h) % palette.length;
+    return palette[idx];
+  };
+}
 
 // Modal State - edit vs add
 let SUPP_MODAL_CTX = { mode: "add", id: null };
@@ -635,6 +652,49 @@ function generateCycleDates(startDateStr, cycle, endDate) {
 }
 
 // 🌐 Expose calendar refresh globally
+// Helper: compute order reminder date (7 days before last dose)
+function _computeOrderReminderDate(supp) {
+  try {
+    const servings = Number(supp && supp.servings);
+    const startStr = (supp && supp.startDate) ? String(supp.startDate) : '';
+    const timesArr = Array.isArray(supp?.times) ? supp.times
+                    : (Array.isArray(supp?.time) ? supp.time
+                       : (typeof supp?.time === 'string' && supp.time ? [supp.time] : []));
+    const perDay = timesArr.length;
+    if (!servings || servings <= 0 || !startStr || perDay <= 0) return null;
+    const m = startStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return null;
+    const y = +m[1], mo = +m[2]-1, d = +m[3];
+    const start = new Date(y, mo, d);
+    start.setHours(0,0,0,0);
+    const needOnDays = Math.max(1, Math.ceil(servings / perDay));
+    let last = null;
+    if (supp && supp.cycle && (Number(supp.cycle.on)||0) + (Number(supp.cycle.off)||0) > 0) {
+      const on = Math.max(0, Number(supp.cycle.on)||0);
+      const off = Math.max(0, Number(supp.cycle.off)||0);
+      const period = Math.max(1, on + off);
+      let i = 0, count = 0; const date = new Date(start);
+      let guard = 0;
+      while (count < needOnDays && guard < 5000) {
+        if ((i % period) < on) {
+          count++;
+          last = new Date(date);
+        }
+        if (count >= needOnDays) break;
+        date.setDate(date.getDate() + 1);
+        i++; guard++;
+      }
+    } else {
+      last = new Date(start);
+      last.setDate(last.getDate() + (needOnDays - 1));
+    }
+    if (!last) return null;
+    const reminder = new Date(last);
+    reminder.setDate(reminder.getDate() - 7);
+    return reminder;
+  } catch { return null; }
+}
+
 async function refreshCalendar() {
   if (!currentUser || !currentUser.uid) return;
   try {
@@ -674,6 +734,22 @@ async function refreshCalendar() {
         }
       }
     }
+
+    // Add one-time order reminders (7 days before last dose) for this month
+    try {
+      for (const supp of rawSupplements) {
+        if (!supp || !supp.orderReminder) continue;
+        const rDate = _computeOrderReminderDate(supp);
+        if (!rDate) continue;
+        if (rDate.getMonth() === currentMonth && rDate.getFullYear() === currentYear) {
+          expandedSupplements.push({
+            name: `Order more: ${supp.name}`,
+            date: toLocalYMD(rDate),
+            color: '#b45309'
+          });
+        }
+      }
+    } catch {}
 
     const calendarEl = document.getElementById("calendar");
     const labelEl = document.getElementById("currentMonthLabel");
@@ -786,8 +862,10 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ---------- Cycle UI toggle (non-collapsing by default) ----------
-  const cycleChk  = form.querySelector("#suppCycleChk");
-  const startWrap = form.querySelector("#suppCycleStartWrap");
+  const cycleChk   = form.querySelector("#suppCycleChk");
+  const startWrap  = form.querySelector("#suppCycleStartWrap");
+  const startInput = form.querySelector("#suppCycleStart");
+  const startReq   = form.querySelector("#startDateReqStar");
   if (cycleChk && startWrap) {
     // Prefer .is-hidden (keeps space reserved); fallback to .hidden if that's what you have
     const hideClass = startWrap.classList.contains("is-hidden") ? "is-hidden" : "hidden";
@@ -798,6 +876,8 @@ document.addEventListener("DOMContentLoaded", () => {
         // If you must use .hidden, also ensure your CSS preserves layout; otherwise this will reflow.
         startWrap.classList.toggle("hidden", !cycleChk.checked);
       }
+      if (startInput) startInput.required = !!cycleChk.checked;
+      if (startReq) startReq.style.display = cycleChk.checked ? 'inline' : 'none';
     };
     cycleChk.addEventListener("change", sync);
     sync();
@@ -815,22 +895,49 @@ form.addEventListener("submit", async (e) => {
 
   // Collect values from the modal
   const name   = form.querySelector("#suppName")?.value?.trim() || "";
+  const brand  = form.querySelector("#suppBrand")?.value?.trim() || "";
   const dosage = form.querySelector("#suppDosage")?.value?.trim() || "";
+  const servingsRaw = form.querySelector("#suppServings")?.value;
 
   const times = Array.from(form.querySelectorAll('input[name="time"]:checked'))
     .map(cb => cb.value); // e.g., ["Morning","Evening"]
 
+  // Basic validation: require name, dosage, and at least one time of day
+  if (!name) {
+    try { typeof showInlineStatus === "function" && showInlineStatus("Please enter a name.", "error"); } catch {}
+    return;
+  }
+  if (!dosage) {
+    try { typeof showInlineStatus === "function" && showInlineStatus("Please enter a dosage.", "error"); } catch {}
+    return;
+  }
+  if (!times.length) {
+    try { typeof showInlineStatus === "function" && showInlineStatus("Select at least one time of day.", "error"); } catch {}
+    return;
+  }
+
   const onCycle   = !!form.querySelector("#suppCycleChk")?.checked;
-  const startDate = onCycle ? (form.querySelector("#suppCycleStart")?.value || null) : null;
+  // Always capture a start date if provided; require only when cycling
+  const startDate = (form.querySelector("#suppCycleStart")?.value || null);
   const daysOn    = onCycle ? (form.querySelector("#suppDaysOn")?.value || "") : "";
   const daysOff   = onCycle ? (form.querySelector("#suppDaysOff")?.value || "") : "";
 
-  // Ensure color (important for summary + calendar)
-  let color = onCycle ? pickColor(name) : "#cccccc";
+  // Require start date when cycling
+  if (onCycle && !startDate) {
+    try { typeof showInlineStatus === "function" && showInlineStatus("Please select a cycle start date.", "error"); } catch {}
+    return;
+  }
+
+  // Ensure color (important for summary + calendar). Only color cycle items.
+  let color = onCycle
+    ? (typeof window.pickColor === 'function' ? window.pickColor(name) : "#2196F3")
+    : null;
 
   const data = {
     name,
+    brand: brand || null,
     dosage,
+    servings: (servingsRaw != null && String(servingsRaw).trim() !== "") ? (parseInt(servingsRaw, 10) || null) : null,
     times,
     cycle: onCycle ? { on: daysOn, off: daysOff } : null,
     startDate,
@@ -838,10 +945,15 @@ form.addEventListener("submit", async (e) => {
   };
 
   // Read modal context to decide add vs edit
-  const ctx = (typeof SUPP_MODAL_CTX !== "undefined" && SUPP_MODAL_CTX) || (window.SUPP_MODAL_CTX || { mode: "add", id: null });
+  // Prefer the shared window context if it indicates edit; otherwise fall back to local default
+  const ctx = (window.SUPP_MODAL_CTX && window.SUPP_MODAL_CTX.mode)
+    ? window.SUPP_MODAL_CTX
+    : ((typeof SUPP_MODAL_CTX !== "undefined" && SUPP_MODAL_CTX) || { mode: "add", id: null });
+  try { console.info('[supp-modal] submit ctx:', ctx); } catch {}
 
   try {
     if (ctx.mode === "edit" && ctx.id) {
+      try { console.info('[supp-modal] updating', ctx.id); } catch {}
       // UPDATE path
       if (typeof updateSupplement === "function") {
         await updateSupplement(uid, ctx.id, data);
@@ -850,6 +962,7 @@ form.addEventListener("submit", async (e) => {
       }
     } else {
       // ADD path
+      try { console.info('[supp-modal] adding new'); } catch {}
       await addSupplement(uid, data);
     }
 
@@ -873,11 +986,10 @@ form.addEventListener("submit", async (e) => {
     }
     closeModal();
 
-    // Reset context to default add mode
+    // Reset context to default add mode in both places
+    window.SUPP_MODAL_CTX = { mode: "add", id: null };
     if (typeof SUPP_MODAL_CTX !== "undefined") {
-      SUPP_MODAL_CTX = { mode: "add", id: null };
-    } else {
-      window.SUPP_MODAL_CTX = { mode: "add", id: null };
+      SUPP_MODAL_CTX = window.SUPP_MODAL_CTX;
     }
   } catch (err) {
     console.error("Save failed:", err);
@@ -909,31 +1021,13 @@ function getModalValues() {
   return { name, dosage, times, cycle, startDate, color };
 }
 
-document.addEventListener("click", async (e) => {
+// Let supplementsUI.js handle opening + prefill for edit buttons.
+document.addEventListener("click", (e) => {
   const editBtn = e.target.closest(".btn-edit-supp");
   if (!editBtn) return;
-
   const id = editBtn.dataset.id;
   if (!id) return;
-
-  // Get the item from your in-memory store OR fetch it.
-  // Prefer your existing list in memory to avoid 2nd read:
-  const supp = getSupplementById(id); // implement or use your store
-
-  if (!supp) return;
-
-  // Enter edit mode and prefill
-  SUPP_MODAL_CTX = { mode: "edit", id };
-  setModalValues({
-    name: supp.name,
-    dosage: supp.dosage,
-    times: supp.times ?? (supp.time ? [supp.time] : []), // back-compat
-    cycle: supp.cycle || null,
-    startDate: supp.startDate || "",
-    color: supp.color || pickColor?.(supp.name) || "#cccccc"
-  });
-
-  openSupplementModal(); // your existing function to show the modal
+  window.SUPP_MODAL_CTX = { mode: "edit", id };
 });
 
 });

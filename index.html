@@ -1,28 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta http-equiv="Content-Security-Policy" content="
-    default-src 'self';
-    script-src 'self' https://www.gstatic.com 'unsafe-inline';
-    style-src 'self' 'unsafe-inline';
-    connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com;
-    img-src 'self' data:;
-    font-src 'self';
-    object-src 'none';
-    base-uri 'self';
-    form-action 'self';
-    frame-ancestors 'none';
-    upgrade-insecure-requests;
-  ">
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <link rel="icon" href="data:," />
-  <title>Supplement Tracker</title>
-  <link rel="stylesheet" href="style.css?v=9">
-  <link rel="stylesheet" href="notifications.css"/>
-  <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore-compat.js"></script>
+
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' https://www.gstatic.com https://cdn.jsdelivr.net https://apis.google.com 'unsafe-inline';
+  style-src  'self' 'unsafe-inline';
+  img-src    'self' data: blob:;
+  font-src   'self';
+  connect-src 'self'
+    https://firestore.googleapis.com
+    https://identitytoolkit.googleapis.com
+    https://securetoken.googleapis.com
+    https://www.googleapis.com
+    https://apis.google.com
+    https://www.gstatic.com
+    https://cdn.jsdelivr.net
+    https://world.openfoodfacts.org
+    https://health-products.canada.ca
+    https://*.googleapis.com
+    https://*.gstatic.com
+    blob: data: ws: wss: http://127.0.0.1:3001 ws://127.0.0.1:3001;
+  frame-src  'self' https://supplement-tracker-bec8a.firebaseapp.com https://accounts.google.com;
+  worker-src 'self' blob:;
+  object-src 'none';
+  base-uri   'self';
+  form-action 'self';
+  upgrade-insecure-requests;
+">
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<link rel="icon" href="data:," />
+<title>Supplement Tracker</title>
+
+<link rel="stylesheet" href="style.css?v=10">
+<link rel="stylesheet" href="notifications.css"/>
+<link rel="stylesheet" href="barcodeStyle.css">
+
+<!-- Libraries FIRST (allowed by your CSP) -->
+<script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+<!-- Your scanner AFTER libraries (pick the file you’re actually using) -->
+<!-- Debug console removed -->
+<!-- Your scanner AFTER libraries (pick the file you’re actually using) -->
+<!-- Statically include ZXing library UMD to ensure global on iOS -->
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
+<!-- Your scanner AFTER libraries (pick the file you’re actually using) -->
+<script src="./js/barcode.js?v=17"></script>
+<!-- or, if you’re using the iOS-focused build: -->
+<!-- <script src="./js/barcode.iosfix.js?v=8"></script> -->
+<!-- Firebase (these can remain here if you like) -->
+<script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore-compat.js"></script>
+
   <style>
     body:not(.logged-in) #appContent { display: none; }
     body:not(.logged-in) .sidebar { display: none; }
@@ -58,8 +91,56 @@
   </style>
 </head>
 
-<body>
+<div id="barcodeOverlay" aria-hidden="true"></div>
 
+<div id="barcodeModal" role="dialog" aria-modal="true">
+  <div class="bm-card" role="document">
+    <h2>Scan result</h2>
+    <div class="bm-sub" id="bm_status"></div>
+
+    <div class="bm-row">
+      <label>Barcode</label>
+      <div class="bm-code">
+        <span id="bm_codeValue">—</span>
+        <button type="button" class="bm-btn secondary" id="bm_copyBtn">Copy</button>
+      </div>
+    </div>
+
+    <div class="bm-row">
+      <label for="bm_name">Product name</label>
+      <input id="bm_name" type="text" value="">
+    </div>
+
+    <div class="bm-row">
+      <label for="bm_brand">Brand</label>
+      <input id="bm_brand" type="text" value="">
+    </div>
+
+    <div class="bm-row">
+      <label for="bm_serving">Serving size / dose</label>
+      <input id="bm_serving" type="text" value="">
+    </div>
+
+    <div class="bm-row">
+      <label for="bm_servings">Servings per container</label>
+      <input id="bm_servings" type="text" value="">
+    </div>
+
+    <div class="bm-actions">
+      <div class="bm-links">
+        <a id="bm_link_off" class="bm-link" target="_blank" rel="noopener">Open Food Facts</a>
+        <a id="bm_link_hc"  class="bm-link" target="_blank" rel="noopener">Search Health Canada</a>
+        <a id="bm_link_ggl" class="bm-link" target="_blank" rel="noopener">Google</a>
+      </div>
+      <div>
+        <button type="button" class="bm-btn secondary" id="bm_closeBtn">Close</button>
+        <button type="button" class="bm-btn primary"   id="bm_saveBtn">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<body>
   <!-- Notes Modal (moved inside <body>) -->
   <div id="notesModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="notesModalTitle" aria-describedby="notesModalDesc">
     <div class="modal-content modal-notes" role="document">
@@ -101,6 +182,9 @@
 
       <button id="notesBtn" class="sidebar-btn">Notes</button>
       <button id="addSupplementBtn" class="sidebar-btn">Add New Supplement</button>
+
+      
+
       <img id="icon" src="./assets/logo-icon.svg" alt="logo" class="banner-logo">
     </aside>
 
@@ -234,20 +318,32 @@
 
           <h2 id="supplementModalTitle">Add New Supplement</h2>
           <p id="supplementModalDesc" class="modal-desc">Fill in the details and click Save.</p>
+          <button id="barcodeBtn" class="supplement-barcodeBtn">Barcode Scanner</button>
+          <form id="supplementModalForm" novalidate>
 
-          <form id="supplementModalForm">
             <div class="form-row">
-              <label for="suppName">Name</label>
-              <input id="suppName" name="name" type="text" required />
+              <label for="suppBrand">Brand</label>
+              <input id="suppBrand" name="brand" type="text" />
             </div>
 
             <div class="form-row">
-              <label for="suppDosage">Dosage</label>
+              <label for="suppName">Name <span class="req" aria-hidden="true">*</span></label>
+              <input id="suppName" name="name" type="text" />
+            </div>
+
+            <div class="form-row">
+              <label for="suppDosage">Dosage <span class="req" aria-hidden="true">*</span></label>
               <input id="suppDosage" name="dosage" type="text" placeholder="e.g., 500mg" />
+            </div>
+
+            <div class="form-row">
+              <label for="suppServings">Servings per container</label>
+              <input id="suppServings" name="servings" type="number" min="1" placeholder="e.g., 60" />
             </div>
 
             <!-- Time of day -->
             <div class="form-row">
+              <label class="time-of-day-label">Time of day <span class="req" aria-hidden="true">*</span></label>
               <div class="time-grid">
                 <label class="time-item">
                   <input type="checkbox" name="time" value="Morning">
@@ -271,11 +367,12 @@
                 <span>On a cycle?</span>
               </label>
 
+              <input type="date" id="suppCycleStart" name="startDate">
+              <span class="field-caption">Start Date <span id="startDateReqStar" class="req" aria-hidden="true">*</span></span>
+
               <div id="suppCycleStartWrap" class="cycle-start is-hidden">
-                <input type="date" id="suppCycleStart" name="startDate">
                 <input type="number" id="suppDaysOn" name="onDay" placeholder="Days On">
                 <input type="number" id="suppDaysOff" name="offDay" placeholder="Days Off">
-                <span class="field-caption">Start Date</span>
               </div>
             </div>
 
@@ -286,20 +383,13 @@
           </form>
         </div>
       </div>
-
-      <script>
-        // Duplicate close button support
-        document.getElementById('notificationsCloseBtnBottom')?.addEventListener('click', () => {
-          document.getElementById('notificationsCloseBtn')?.click();
-        });
-      </script>
     </main>
   </div>
-
   <div id="app-status" class="status-pill" role="status" aria-live="polite"></div>
-
   <script type="module" src="./js/toast.js"></script>
+  <script type="module" src="./js/firebaseConfig.js"></script>
   <script type="module" src="./js/main.js"></script>
+  <script type="module" src="./js/supplements.js"></script>
   <script type="module" src="./js/supplementsUI.js"></script>
   <script type="module" src="./js/notifications.js"></script>
   <script type="module" src="./js/sidebar-toggle.js"></script>
