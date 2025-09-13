@@ -84,8 +84,67 @@ if (_isToday) {
   });
 
   dayEl.appendChild(supplementsContainer);
+
+  // Open a modal with this day's details (works on mobile and desktop)
+  dayEl.addEventListener('click', () => {
+    try {
+      const modal = document.getElementById('dayModal');
+      const list = document.getElementById('dayModalList');
+      const title = document.getElementById('dayModalTitle');
+      if (!modal || !list || !title) return;
+      // Clear previous
+      while (list.firstChild) list.removeChild(list.firstChild);
+      // Title pretty format
+      const dt = new Date(year, month, day);
+      const opts = { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' };
+      title.textContent = dt.toLocaleDateString(undefined, opts);
+      if (supplementsForDay.length === 0) {
+        const empty = document.createElement('div');
+        empty.textContent = 'No supplements scheduled.';
+        list.appendChild(empty);
+      } else {
+        supplementsForDay.forEach(s => {
+          const item = document.createElement('div');
+          item.className = 'supplement';
+          item.textContent = s.name;
+          if (s.color) { item.style.backgroundColor = s.color; item.style.color = '#fff'; }
+          list.appendChild(item);
+        });
+      }
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    } catch (e) { /* noop */ }
+  });
   daysGrid.appendChild(dayEl);
 }
+
+// Close handlers for day modal
+// Robust binding for the day modal (works even if module loads after DOMContentLoaded)
+(function bindDayModalControls(){
+  function tryBind(){
+    const modal = document.getElementById('dayModal');
+    if (!modal) return false;
+    if (modal._bound) return true;
+    const closeBtn = document.getElementById('closeDayBtn');
+    const close = () => { modal.classList.add('hidden'); document.body.style.overflow=''; };
+    if (closeBtn) closeBtn.addEventListener('click', close);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal || (e.target && e.target.matches('[data-close-modal]'))) close();
+    });
+    window.addEventListener('keydown', (e) => { if (!modal.classList.contains('hidden') && e.key === 'Escape') close(); });
+    modal._bound = true;
+    return true;
+  }
+  if (!tryBind()) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', tryBind, { once: true });
+    } else {
+      // In case the modal is added later
+      const mo = new MutationObserver(() => { if (tryBind()) mo.disconnect(); });
+      mo.observe(document.documentElement || document.body, { childList: true, subtree: true });
+    }
+  }
+})();
 
   calendarEl.appendChild(daysGrid);
 }
