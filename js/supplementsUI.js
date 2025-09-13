@@ -383,8 +383,8 @@ function renderSupplements() {
   }
   const norm = (v) => (typeof v === "string" ? v.trim().toLowerCase() : "");
   const cap1 = (s) => (s && s.length ? s.charAt(0).toUpperCase() + s.slice(1) : s);
-  const ORDER = ["Morning", "Afternoon", "Evening", "Unscheduled"];
-  const groups = { Morning: [], Afternoon: [], Evening: [], Unscheduled: [] };
+  const ORDER = ["Morning", "Afternoon", "Evening"];
+  const groups = { Morning: [], Afternoon: [], Evening: [] };
   (supplements || []).forEach((supplement) => {
     const times = Array.isArray(supplement?.time)
   ? supplement.time
@@ -394,8 +394,11 @@ function renderSupplements() {
     const normalized = times.map(norm).map((t) =>
       t.startsWith("m") ? "morning" : t.startsWith("a") ? "afternoon" : t.startsWith("e") ? "evening" : ""
     ).filter(Boolean);
-    if (normalized.length === 0) groups.Unscheduled.push(supplement);
-    else normalized.forEach((t) => { const key = cap1(t); (groups[key] || groups.Unscheduled).push(supplement); });
+    if (normalized.length === 0) {
+      // No time of day selected; skip rendering in summary (time selection is required)
+      return;
+    }
+    normalized.forEach((t) => { const key = cap1(t); if (groups[key]) groups[key].push(supplement); });
   });
   const total = ORDER.reduce((n, k) => n + (groups[k] ? groups[k].length : 0), 0);
   const buildBox = (supplement, labelForTime) => {
@@ -533,18 +536,22 @@ if (onDays > 0 || offDays > 0) {
         const menu = document.createElement('div');
         menu.className = 'card-menu hidden';
         menu.setAttribute('role', 'menu');
+        menu.setAttribute('aria-label','Supplement actions');
 
         // Reminder toggle in menu (always shown in compact menu)
         const toggleItem = document.createElement('label');
         toggleItem.className = 'menu-item menu-toggle';
         const menuCb = document.createElement('input');
         menuCb.type = 'checkbox';
+        menuCb.setAttribute('role','menuitemcheckbox');
+        menuCb.setAttribute('aria-checked', String(!!supplement.orderReminder));
         menuCb.checked = !!supplement.orderReminder;
         menuCb.addEventListener('change', async ()=>{
           try {
             if (!currentUser?.uid || !supplement?.id) return;
             await updateSupplement(currentUser.uid, supplement.id, { orderReminder: !!menuCb.checked });
             try { supplement.orderReminder = !!menuCb.checked; } catch(_) {}
+            try { menuCb.setAttribute('aria-checked', String(!!menuCb.checked)); } catch {}
             if (typeof window.refreshCalendar==='function') await window.refreshCalendar();
           } catch(e){ console.error('[reminder] failed', e); }
         });
@@ -557,11 +564,13 @@ if (onDays > 0 || offDays > 0) {
         const menuEdit = document.createElement('button');
         menuEdit.type = 'button';
         menuEdit.className = 'menu-item edit-btn';
+        menuEdit.setAttribute('role','menuitem');
         menuEdit.dataset.id = (supplement && supplement.id) ? supplement.id : '';
         menuEdit.textContent = 'Edit';
         const menuDel = document.createElement('button');
         menuDel.type = 'button';
         menuDel.className = 'menu-item delete-btn';
+        menuDel.setAttribute('role','menuitem');
         menuDel.dataset.id = (supplement && supplement.id) ? supplement.id : '';
         menuDel.textContent = 'Delete';
         menu.append(menuEdit, menuDel);
@@ -585,6 +594,7 @@ if (onDays > 0 || offDays > 0) {
 
         // Open/close behavior
         let closing = null;
+        let prevFocus = null;
         const positionMenu = () => {
           try {
             const r = menuBtn.getBoundingClientRect();
@@ -599,31 +609,69 @@ if (onDays > 0 || offDays > 0) {
           } catch {}
         };
         const openMenu = () => {
+          prevFocus = document.activeElement;
           menu.classList.remove('hidden');
+          // Ensure no conflicting positional styles force full-width
+          try { menu.style.right = 'auto'; menu.style.bottom = 'auto'; menu.style.width = 'auto'; } catch {}
           menuBtn.setAttribute('aria-expanded','true');
           try { box.classList.add('menu-open'); } catch {}
           try { const grp = box.closest('.supp-group'); if (grp) grp.classList.add('menu-open'); } catch {}
           // Promote to fixed positioning to avoid clipping/stacking issues
           positionMenu();
+          // Animate in
+          requestAnimationFrame(() => { try { menu.classList.add('show'); } catch {} });
+          // Focus first actionable
+          try {
+            const focusables = menu.querySelectorAll('[role="menuitem"], [role="menuitemcheckbox"], button, input, a');
+            if (focusables.length) { (focusables[0]).focus(); }
+          } catch {}
           const onDoc = (ev) => {
             if (!menu.contains(ev.target) && ev.target !== menuBtn && !menuBtn.contains(ev.target)) closeMenu();
           };
           const onRepos = () => positionMenu();
+          const onKey = (e) => {
+            if (e.key === 'Escape') { e.preventDefault(); closeMenu(true); return; }
+            if (e.key === 'Tab') {
+              const items = Array.from(menu.querySelectorAll('[role="menuitem"], [role="menuitemcheckbox"], button, input, a')).filter(el=>!el.disabled && el.offsetParent!==null);
+              if (!items.length) return;
+              const idx = items.indexOf(document.activeElement);
+              if (e.shiftKey) {
+                if (idx <= 0) { e.preventDefault(); items[items.length-1].focus(); }
+              } else {
+                if (idx === items.length-1) { e.preventDefault(); items[0].focus(); }
+              }
+            } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+              const items = Array.from(menu.querySelectorAll('[role="menuitem"], [role="menuitemcheckbox"], button, input, a')).filter(el=>!el.disabled && el.offsetParent!==null);
+              if (!items.length) return;
+              const idx = items.indexOf(document.activeElement);
+              let next = idx;
+              if (e.key === 'ArrowDown') next = (idx + 1) % items.length; else next = (idx - 1 + items.length) % items.length;
+              e.preventDefault(); items[next].focus();
+            }
+          };
           document.addEventListener('mousedown', onDoc, true);
           window.addEventListener('resize', onRepos, true);
           window.addEventListener('scroll', onRepos, true);
+          document.addEventListener('keydown', onKey, true);
           closing = () => {
             document.removeEventListener('mousedown', onDoc, true);
             window.removeEventListener('resize', onRepos, true);
             window.removeEventListener('scroll', onRepos, true);
+            document.removeEventListener('keydown', onKey, true);
           };
         };
-        const closeMenu = () => {
-          menu.classList.add('hidden');
+        const closeMenu = (restoreFocus) => {
+          // Animate out then hide
+          try { menu.classList.remove('show'); } catch {}
+          const hideNow = () => { menu.classList.add('hidden'); };
+          try { menu.addEventListener('transitionend', hideNow, { once: true }); } catch { hideNow(); }
           menuBtn.setAttribute('aria-expanded','false');
           try { box.classList.remove('menu-open'); } catch {}
           try { const grp = box.closest('.supp-group'); if (grp) grp.classList.remove('menu-open'); } catch {}
           if (typeof closing === 'function') { closing(); closing = null; }
+          if (restoreFocus && prevFocus && prevFocus.focus) {
+            try { prevFocus.focus(); } catch {}
+          }
         };
         menuBtn.addEventListener('click', () => {
           const isOpen = !menu.classList.contains('hidden');
@@ -689,12 +737,12 @@ return box;
   });
   btnExpand.addEventListener("click", () => {
     document.querySelectorAll(".supp-group").forEach((d) => (d.open = true));
-    ["Morning","Afternoon","Evening","Unscheduled"].forEach((k) => collapseState[k] = false);
+    ["Morning","Afternoon","Evening"].forEach((k) => collapseState[k] = false);
     setCollapseState(collapseState);
   });
   btnCollapse.addEventListener("click", () => {
     document.querySelectorAll(".supp-group").forEach((d) => (d.open = false));
-    ["Morning","Afternoon","Evening","Unscheduled"].forEach((k) => collapseState[k] = true);
+    ["Morning","Afternoon","Evening"].forEach((k) => collapseState[k] = true);
     setCollapseState(collapseState);
   });
   wireSummaryActions();
