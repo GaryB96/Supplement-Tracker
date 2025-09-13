@@ -4,6 +4,7 @@ import {
   deleteSupplement,
   updateSupplement
 } from "./supplements.js";
+import { showConfirmToast } from "./toast.js";
 import { db } from "./firebaseConfig.js";
 import {
   doc, getDoc, setDoc
@@ -48,6 +49,76 @@ function getTimeCheckboxes() {
   return document.querySelectorAll(
     ".checkbox-tiles input[type='checkbox']:not(#cycleCheckbox), .checkbox-group input[type='checkbox']:not(#cycleCheckbox)"
   );
+}
+
+// Derive daily servings from explicit field, dosage text, or times selected
+function getPerDay(s) {
+  try {
+    const explicit = Number(s && s.dailyDose);
+    if (explicit && explicit > 0) return explicit;
+    if (typeof parseDailyFromDosage === 'function') {
+      const parsed = parseDailyFromDosage(s && s.dosage);
+      if (parsed && parsed > 0) return parsed;
+    }
+    const timesArr = Array.isArray(s?.times) ? s.times
+                    : (Array.isArray(s?.time) ? s.time
+                       : (typeof s?.time === 'string' && s.time ? [s.time] : []));
+    return Math.max(1, timesArr.length || 1);
+  } catch { return 1; }
+}
+
+// Estimate remaining doses based on startDate, servings, times/day, and cycle on/off
+function computeRemainingDoses(s) {
+  try {
+    const totalServings = Number(s && s.servings);
+    const startStr = (s && s.startDate) ? String(s.startDate).trim() : '';
+    const timesArr = Array.isArray(s?.times) ? s.times
+                    : (Array.isArray(s?.time) ? s.time
+                       : (typeof s?.time === 'string' && s.time ? [s.time] : []));
+    function parseDailyFromDosage(txt){
+      try {
+        if (!txt) return null;
+        const t = String(txt).toLowerCase();
+        const regs = [
+          /(\d+(?:\.\d+)?)\s*(?:x|×)\s*(?:per\s*day|\/\s*day|a\s*day|daily)?/,
+          /(\d+)\s*(?:per\s*day|\/\s*day|a\s*day|daily)/,
+          /take\s+(\d+)/,
+          /(\d+)\s*(?:capsules?|tablets?|pills?)\s*(?:daily|per\s*day|a\s*day)/
+        ];
+        for (let r of regs){ const m = t.match(r); if (m && m[1]) return Math.max(1, Math.floor(Number(m[1]))); }
+        return null;
+      } catch { return null; }
+    }
+    const parsedDaily = parseDailyFromDosage(s && s.dosage);
+    const perDay = (Number(s && s.dailyDose) || 0) || parsedDaily || timesArr.length || 1;
+    if (!totalServings || totalServings <= 0 || !startStr || perDay <= 0) return null;
+
+    const m = startStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return null;
+    const y = +m[1], mo = +m[2]-1, d = +m[3];
+    const start = new Date(y, mo, d);
+    const today = new Date();
+    start.setHours(0,0,0,0); today.setHours(0,0,0,0);
+
+    let daysElapsed = Math.floor((today - start) / 86400000) + 1; // include start day
+    if (daysElapsed < 0) daysElapsed = 0;
+
+    let onDaysCount = daysElapsed;
+    const on = Number(s?.cycle?.on || 0);
+    const off = Number(s?.cycle?.off || 0);
+    if (on > 0 || off > 0) {
+      const period = Math.max(1, on + Math.max(0, off));
+      const full = Math.floor(daysElapsed / period);
+      const rem = daysElapsed % period;
+      onDaysCount = full * on + Math.min(on, rem);
+    }
+
+    const consumed = Math.max(0, onDaysCount * perDay);
+    const remaining = Math.max(0, totalServings - consumed);
+    return remaining;
+  } catch {
+    return null;
+  }
 }
 
 if (cycleCheckbox && cycleDetails) {
@@ -144,9 +215,22 @@ function editSupplement(id) {
   const q = (sel) => formModal.querySelector(sel);
 
   const nameEl   = q("#suppName");
+  const brandEl  = q("#suppBrand");
   const dosageEl = q("#suppDosage");
+  const dailyEl  = q("#suppDailyDose");
   if (nameEl)   nameEl.value   = supplement.name || "";
+  if (brandEl)  brandEl.value  = supplement.brand || "";
   if (dosageEl) dosageEl.value = supplement.dosage || "";
+  if (dailyEl)  dailyEl.value  = (supplement && supplement.dailyDose != null) ? String(supplement.dailyDose) : "";
+
+  // Populate servings with the amount remaining (fallback to total if unavailable)
+  const servingsEl = q("#suppServings");
+  if (servingsEl) {
+    const rem = computeRemainingDoses(supplement);
+    if (rem !== null && rem !== undefined) servingsEl.value = String(rem);
+    else if (supplement && supplement.servings != null) servingsEl.value = String(supplement.servings);
+    else servingsEl.value = "";
+  }
 
   // Times checkboxes in modal
   const selectedTimes = Array.isArray(supplement.times)
@@ -157,19 +241,25 @@ function editSupplement(id) {
   });
 
   // Cycle fields
-  const chk   = q("#suppCycleChk");
-  const onEl  = q("#suppDaysOn");
-  const offEl = q("#suppDaysOff");
-  const startEl = q("#suppCycleStart");
+  const chk      = q("#suppCycleChk");
+  const onEl     = q("#suppDaysOn");
+  const offEl    = q("#suppDaysOff");
+  const startEl  = q("#suppCycleStart");
+  const startWrap= q("#suppCycleStartWrap");
   const hasCycle = !!(supplement.cycle && (Number(supplement.cycle.on) > 0 || Number(supplement.cycle.off) > 0));
+  const savedStart = (supplement.startDate || (supplement.cycle && supplement.cycle.startDate) || "");
   if (chk) {
+    // Keep the user's cycle choice: only check when a real cycle exists
     chk.checked = hasCycle;
-    // Let existing UI logic show/hide the cycle section
     chk.dispatchEvent(new Event("change", { bubbles: true }));
   }
   if (onEl)   onEl.value   = hasCycle ? Number(supplement.cycle.on)  : "";
   if (offEl)  offEl.value  = hasCycle ? Number(supplement.cycle.off) : "";
-  if (startEl) startEl.value = hasCycle ? (supplement.startDate || supplement.cycle.startDate || "") : "";
+  if (startEl) startEl.value = savedStart;
+  // If we have a saved start date but not on a cycle, ensure the picker is visible
+  if (!hasCycle && savedStart && startWrap) {
+    startWrap.classList.remove('hidden','is-hidden');
+  }
 
   // Optional color
   const colorEl = q("#suppColor");
@@ -261,6 +351,22 @@ function renderSupplements() {
       supplementSummaryContainer.removeChild(supplementSummaryContainer.firstChild);
     }
   }
+  // Toggle summary title and size controls visibility when no supplements
+  try {
+    const titleEl   = document.getElementById('summaryTitle');
+    const sizeCtrls = document.getElementById('summarySizeControls');
+    const tutEl     = document.getElementById('summaryTutorial');
+    const hasSupps  = Array.isArray(supplements) && supplements.length > 0;
+    if (titleEl)   titleEl.style.display = hasSupps ? '' : 'none';
+    if (sizeCtrls) sizeCtrls.style.display = hasSupps ? 'flex' : 'none';
+    if (tutEl) {
+      // Prefer class toggle, but also set inline display for robustness
+      tutEl.classList.toggle('hidden', !!hasSupps);
+      tutEl.style.display = hasSupps ? 'none' : 'block';
+    }
+    // Also set a body flag to let CSS force visibility if needed
+    try { document.body.classList.toggle('no-supps', !hasSupps); } catch {}
+  } catch(_){}
   // Local date formatter: 2025-09-01 -> Sept. 1, 2025
   function fmtYMDPretty(ymd) {
     try {
@@ -313,7 +419,8 @@ box.style.borderBottom = `6px solid ${ (supplement && supplement.cycle) ? __acce
     strong.textContent = br ? (nm ? nm + ", " + br : br) : nm;
     nameRow.appendChild(strong);
     const doseRow = document.createElement("div");
-    doseRow.textContent = "Dosage: " + ((supplement && supplement.dosage) ? supplement.dosage : "");
+    const perDay = getPerDay(supplement);
+    doseRow.textContent = "Dose per day: " + String(perDay);
 
     // Optional start date (shown when present)
     const start = (supplement && supplement.startDate) ? String(supplement.startDate).trim() : "";
@@ -340,95 +447,198 @@ if (onDays > 0 || offDays > 0) {
   // cycleDiv.className = "cycle-line";
 }
 
- // Remaining doses (approx)
- const remainRow = document.createElement("div");
- (function computeRemaining(){
-   try {
-     const totalServings = Number(supplement && supplement.servings);
-     const startStr = (supplement && supplement.startDate) ? String(supplement.startDate).trim() : '';
-     // times per day
-     const timesArr = Array.isArray(supplement?.times) ? supplement.times
-                      : (Array.isArray(supplement?.time) ? supplement.time
-                         : (typeof supplement?.time === 'string' && supplement.time ? [supplement.time] : []));
-     const perDay = timesArr.length;
-     if (!totalServings || totalServings <= 0 || !startStr || perDay <= 0) return;
-     const m = startStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-     if (!m) return;
-     const y = +m[1], mo = +m[2]-1, d = +m[3];
-     const start = new Date(y, mo, d);
-     const today = new Date();
-     // normalize to local midnight
-     start.setHours(0,0,0,0); today.setHours(0,0,0,0);
-     let daysElapsed = Math.floor((today - start) / 86400000) + 1; // include start day
-     if (daysElapsed < 0) daysElapsed = 0;
-     let onDaysCount = daysElapsed;
-     if (onDays > 0 || offDays > 0) {
-       const period = Math.max(1, onDays + Math.max(0, offDays));
-       const full = Math.floor(daysElapsed / period);
-       const rem = daysElapsed % period;
-       onDaysCount = full * onDays + Math.min(onDays, rem);
-     }
-     const consumed = Math.max(0, onDaysCount * perDay);
-     const remaining = Math.max(0, totalServings - consumed);
-     remainRow.textContent = `Approx. Doses Remaining: ${remaining} of ${totalServings}`;
-   } catch {}
- })();
-
-const actions = document.createElement("div");
-actions.className = "actions";
-
-const editBtn = document.createElement("button");
-editBtn.className = "edit-btn btn-edit-supp";
-editBtn.dataset.id = (supplement && supplement.id) ? supplement.id : "";
-editBtn.textContent = "Edit";
-
-const delBtn = document.createElement("button");
-delBtn.className = "delete-btn";
-delBtn.dataset.id = (supplement && supplement.id) ? supplement.id : "";
-delBtn.textContent = "Delete";
-
-actions.append(editBtn, delBtn);
-
-// append rows based on card size (compact vs large)
-const isCompact = !!(supplementSummaryContainer && supplementSummaryContainer.classList && supplementSummaryContainer.classList.contains('size-compact'));
-const children = [nameRow, doseRow, timeRow];
- if (!isCompact) {
-  if (start) children.push(dateRow);
-  if (cycleDiv) children.push(cycleDiv);
-  if (remainRow && remainRow.textContent) children.push(remainRow);
-  // Add reminder toggle when remaining can be computed
+  // Days remaining (uses dailyDose if provided)
+  const remainRow = document.createElement("div");
   try {
     const totalServings = Number(supplement && supplement.servings);
-    const hasStart = !!(supplement && supplement.startDate);
-    const timesArr = Array.isArray(supplement?.times) ? supplement.times
-                     : (Array.isArray(supplement?.time) ? supplement.time
-                        : (typeof supplement?.time === 'string' && supplement.time ? [supplement.time] : []));
-    const perDay = timesArr.length;
-    if (totalServings > 0 && hasStart && perDay > 0) {
-      const row = document.createElement('div');
-      row.className = 'toggle order-toggle';
-      const cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.className = 'toggle-input';
-      cb.checked = !!supplement.orderReminder;
-      cb.setAttribute('aria-label', 'Order reminder (7 days before last dose)');
-      cb.addEventListener('change', async ()=>{
-        try {
-          if (!currentUser?.uid || !supplement?.id) return;
-          await updateSupplement(currentUser.uid, supplement.id, { orderReminder: !!cb.checked });
-          if (typeof window.refreshCalendar==='function') await window.refreshCalendar();
-        } catch(e){ console.error('[reminder] failed', e); }
-      });
-      const lab = document.createElement('span');
-      lab.className = 'toggle-label';
-      lab.textContent = 'Order reminder (7 days before last dose)';
-      row.append(cb, lab);
-      children.push(row);
+    const remainingServings = computeRemainingDoses(supplement);
+    const perDay = getPerDay(supplement);
+    if (totalServings > 0 && remainingServings != null && perDay > 0) {
+      const daysRemaining = Math.max(0, Math.ceil(remainingServings / perDay));
+      remainRow.textContent = `Days remaining: ${daysRemaining}`;
     }
   } catch {}
-}
-if (cycleDiv) children.push(cycleDiv);
-children.push(actions);
+
+    const actions = document.createElement("div");
+    actions.className = "actions";
+    const editBtn = document.createElement("button");
+    editBtn.className = "edit-btn btn-edit-supp";
+    editBtn.dataset.id = (supplement && supplement.id) ? supplement.id : "";
+    editBtn.textContent = "Edit";
+    const delBtn = document.createElement("button");
+    delBtn.className = "delete-btn";
+    delBtn.dataset.id = (supplement && supplement.id) ? supplement.id : "";
+    delBtn.textContent = "Delete";
+    actions.append(editBtn, delBtn);
+
+// append rows based on card size (compact vs large)
+    const isCompact = !!(supplementSummaryContainer && supplementSummaryContainer.classList && supplementSummaryContainer.classList.contains('size-compact'));
+    const children = [nameRow, doseRow, timeRow];
+    if (isCompact) {
+      if (remainRow && remainRow.textContent) children.push(remainRow); // show days remaining on compact
+    } else {
+      if (start) children.push(dateRow);
+      if (cycleDiv) children.push(cycleDiv);
+      if (remainRow && remainRow.textContent) children.push(remainRow);
+      // Add reminder toggle when remaining can be computed
+      try {
+        const totalServings = Number(supplement && supplement.servings);
+        const hasStart = !!(supplement && supplement.startDate);
+        const timesArr = Array.isArray(supplement?.times) ? supplement.times
+                     : (Array.isArray(supplement?.time) ? supplement.time
+                        : (typeof supplement?.time === 'string' && supplement.time ? [supplement.time] : []));
+        const perDay = timesArr.length;
+        if (totalServings > 0 && hasStart && perDay > 0) {
+          const row = document.createElement('div');
+          row.className = 'toggle order-toggle';
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.className = 'toggle-input';
+          cb.checked = !!supplement.orderReminder;
+          cb.setAttribute('aria-label', 'Order reminder (7 days before last dose)');
+          cb.addEventListener('change', async ()=>{
+            try {
+              if (!currentUser?.uid || !supplement?.id) return;
+              await updateSupplement(currentUser.uid, supplement.id, { orderReminder: !!cb.checked });
+              // Keep local state in sync so size toggles preserve the checkbox state
+              try { supplement.orderReminder = !!cb.checked; } catch(_) {}
+              if (typeof window.refreshCalendar==='function') await window.refreshCalendar();
+            } catch(e){ console.error('[reminder] failed', e); }
+          });
+          const lab = document.createElement('span');
+          lab.className = 'toggle-label';
+          lab.textContent = 'Order reminder (7 days before last dose)';
+          row.append(cb, lab);
+          children.push(row);
+        }
+      } catch {}
+    }
+    // Actions or menu depending on size
+    if (isCompact) {
+      try {
+        // Build kebab menu in top-right
+        box.classList.add('has-menu');
+        const menuBtn = document.createElement('button');
+        menuBtn.type = 'button';
+        menuBtn.className = 'card-menu-btn';
+        menuBtn.setAttribute('aria-haspopup', 'menu');
+        menuBtn.setAttribute('aria-expanded', 'false');
+        menuBtn.setAttribute('title', 'More');
+        // Ensure consistent glyph for kebab menu (vertical ellipsis)
+        menuBtn.textContent = '⋮';
+        menuBtn.innerText = '⋯';
+
+        // Normalize glyph across environments
+        try { menuBtn.textContent = '...'; menuBtn.innerText = '...'; } catch {}
+        const menu = document.createElement('div');
+        menu.className = 'card-menu hidden';
+        menu.setAttribute('role', 'menu');
+
+        // Reminder toggle in menu (always shown in compact menu)
+        const toggleItem = document.createElement('label');
+        toggleItem.className = 'menu-item menu-toggle';
+        const menuCb = document.createElement('input');
+        menuCb.type = 'checkbox';
+        menuCb.checked = !!supplement.orderReminder;
+        menuCb.addEventListener('change', async ()=>{
+          try {
+            if (!currentUser?.uid || !supplement?.id) return;
+            await updateSupplement(currentUser.uid, supplement.id, { orderReminder: !!menuCb.checked });
+            try { supplement.orderReminder = !!menuCb.checked; } catch(_) {}
+            if (typeof window.refreshCalendar==='function') await window.refreshCalendar();
+          } catch(e){ console.error('[reminder] failed', e); }
+        });
+        const txt = document.createElement('span');
+        txt.textContent = 'Order reminder';
+        toggleItem.append(menuCb, txt);
+        menu.appendChild(toggleItem);
+
+        // Edit/Delete items in menu
+        const menuEdit = document.createElement('button');
+        menuEdit.type = 'button';
+        menuEdit.className = 'menu-item edit-btn';
+        menuEdit.dataset.id = (supplement && supplement.id) ? supplement.id : '';
+        menuEdit.textContent = 'Edit';
+        const menuDel = document.createElement('button');
+        menuDel.type = 'button';
+        menuDel.className = 'menu-item delete-btn';
+        menuDel.dataset.id = (supplement && supplement.id) ? supplement.id : '';
+        menuDel.textContent = 'Delete';
+        menu.append(menuEdit, menuDel);
+        // Direct handlers so actions work even if global rebinding hasn’t run yet
+        menuEdit.addEventListener('click', () => editSupplement(menuEdit.dataset.id));
+        menuDel.addEventListener('click', async () => {
+          try {
+            const ok = await showConfirmToast('Delete this supplement?', { confirmText: 'Delete', cancelText: 'Cancel', type: 'warn', anchor: menuDel });
+            if (!ok) return;
+            const delId = menuDel.dataset.id;
+            await deleteSupplement(currentUser && currentUser.uid, delId);
+            // Immediately reflect deletion in UI to ensure tutorial toggle updates
+            try {
+              supplements = (supplements || []).filter(s => s && s.id !== delId);
+              renderSupplements();
+            } catch {}
+            await refreshData();
+            if (typeof window.refreshCalendar === "function") await window.refreshCalendar();
+          } catch(e) { console.error('Delete cancelled/failed', e); }
+        });
+
+        // Open/close behavior
+        let closing = null;
+        const positionMenu = () => {
+          try {
+            const r = menuBtn.getBoundingClientRect();
+            const mw = menu.offsetWidth || 180;
+            const mh = menu.offsetHeight || 10;
+            let left = Math.max(8, Math.min(window.innerWidth - mw - 8, r.right - mw));
+            let top  = r.bottom + 6;
+            if (top + mh > window.innerHeight - 8) top = Math.max(8, r.top - mh - 6);
+            menu.style.position = 'fixed';
+            menu.style.left = `${left}px`;
+            menu.style.top  = `${top}px`;
+          } catch {}
+        };
+        const openMenu = () => {
+          menu.classList.remove('hidden');
+          menuBtn.setAttribute('aria-expanded','true');
+          try { box.classList.add('menu-open'); } catch {}
+          try { const grp = box.closest('.supp-group'); if (grp) grp.classList.add('menu-open'); } catch {}
+          // Promote to fixed positioning to avoid clipping/stacking issues
+          positionMenu();
+          const onDoc = (ev) => {
+            if (!menu.contains(ev.target) && ev.target !== menuBtn && !menuBtn.contains(ev.target)) closeMenu();
+          };
+          const onRepos = () => positionMenu();
+          document.addEventListener('mousedown', onDoc, true);
+          window.addEventListener('resize', onRepos, true);
+          window.addEventListener('scroll', onRepos, true);
+          closing = () => {
+            document.removeEventListener('mousedown', onDoc, true);
+            window.removeEventListener('resize', onRepos, true);
+            window.removeEventListener('scroll', onRepos, true);
+          };
+        };
+        const closeMenu = () => {
+          menu.classList.add('hidden');
+          menuBtn.setAttribute('aria-expanded','false');
+          try { box.classList.remove('menu-open'); } catch {}
+          try { const grp = box.closest('.supp-group'); if (grp) grp.classList.remove('menu-open'); } catch {}
+          if (typeof closing === 'function') { closing(); closing = null; }
+        };
+        menuBtn.addEventListener('click', () => {
+          const isOpen = !menu.classList.contains('hidden');
+          if (isOpen) closeMenu(); else openMenu();
+        });
+
+        // Append after children so it overlays top-right
+        box.append(menuBtn, menu);
+      } catch(_){
+        // Fallback: show actions row if menu fails
+        children.push(actions);
+      }
+    } else {
+      children.push(actions);
+    }
 
 box.append(...children);
 return box;
@@ -492,13 +702,27 @@ return box;
 
 function wireSummaryActions() {
   document.querySelectorAll(".edit-btn").forEach((btn) => {
+    // Skip kebab menu items; those have direct handlers
+    if (btn.closest('.card-menu')) return;
     btn.addEventListener("click", () => editSupplement(btn.dataset.id));
   });
   document.querySelectorAll(".delete-btn").forEach((btn) => {
+    // Skip kebab menu items; those have direct handlers
+    if (btn.closest('.card-menu')) return;
     btn.addEventListener("click", async () => {
-      await deleteSupplement(currentUser && currentUser.uid, btn.dataset.id);
-      await refreshData();
-      if (typeof window.refreshCalendar === "function") await window.refreshCalendar();
+        try {
+          const ok = await showConfirmToast('Delete this supplement?', { confirmText: 'Delete', cancelText: 'Cancel', type: 'warn', anchor: btn });
+          if (!ok) return;
+        const delId = btn.dataset.id;
+        await deleteSupplement(currentUser && currentUser.uid, delId);
+        // Immediately update local UI to ensure tutorial toggle
+        try {
+          supplements = (supplements || []).filter(s => s && s.id !== delId);
+          renderSupplements();
+        } catch {}
+        await refreshData();
+        if (typeof window.refreshCalendar === "function") await window.refreshCalendar();
+      } catch(e) { console.error('Delete cancelled/failed', e); }
     });
   });
 }
