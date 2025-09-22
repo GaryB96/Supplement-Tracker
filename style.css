@@ -195,9 +195,59 @@ form button[type="submit"]:hover { background: linear-gradient(90deg, #388e3c, #
   .calendar-nav .help-icon{ width:22px; height:22px; font-size: 13px; }
 }
 
-/* Day modal list */
 .day-modal-list { display: flex; flex-direction: column; gap: 8px; width: 100%; }
-.day-modal-list .supplement { font-size: 0.95rem; padding: 6px 8px; border-radius: 6px; color:#fff; }
+.day-modal-list .supplement {
+  font-size: 0.95rem;
+  padding: 6px 8px;
+  border-radius: 6px;
+  color:#fff;
+  /* Only as wide as the text (not full row) */
+  display: inline-block;
+  align-self: flex-start;    /* prevent flex column from stretching it */
+  max-width: 100%;
+  white-space: nowrap;       /* keep it to a single line */
+  overflow: hidden;          /* clip overflow */
+  text-overflow: ellipsis;   /* show ellipsis if too long */
+}
+.day-section-title{
+  margin-top: 10px;
+  margin-bottom: 6px;
+  padding: 4px 8px;
+  display: inline-block;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: .95rem;
+  background: #0b1220;   /* indigo-50 */
+  color: #22c55e;        /* slate-800 */
+  border: 1px solid #c7d2fe; /* indigo-200 */
+}
+.theme-dark .day-section-title{
+  background: #111827;   /* gray-900 */
+  color: #e5e7eb;        /* gray-200 */
+  border-color: #374151; /* gray-700 */
+}
+
+/* Notifications modal: ICS range controls */
+#notificationsModal .noty-row{ display:flex; flex-direction: column; gap: 10px; }
+#notificationsModal #icsMonthsGroup{ display:flex; gap: 12px; align-items:center; flex-wrap: wrap; }
+#notificationsModal #icsMonthsGroup .ics-radio{ display:inline-flex; gap:6px; align-items:center; padding: 4px 8px; border-radius: 8px; background: color-mix(in oklab, #e5e7eb 60%, transparent); }
+.theme-dark #notificationsModal #icsMonthsGroup .ics-radio{ background: color-mix(in oklab, #374151 60%, transparent); }
+#notificationsModal #icsWarn{ min-height: 18px; }
+#notificationsModal #notificationsIcsBtn{ margin-top: 4px; align-self: flex-start; }
+
+/* Order Reminders modal */
+#orderRemindersModal .order-list{ display:flex; flex-direction: column; gap: 10px; width: 100%; }
+#orderRemindersModal .modal-body{ display:flex; flex-direction: column; align-items: stretch; }
+#orderRemindersModal .order-head{ display:grid; grid-template-columns: 1fr 1fr; align-items:center; gap: 12px; margin: 4px 0 6px; font-weight: 400; color: var(--muted, #64748b); border-bottom: 1px solid var(--border, #1e293b); padding-bottom: 6px; }
+#orderRemindersModal .order-name-h{ text-align:left; }
+#orderRemindersModal .order-date-h{ text-align:Center; }
+#orderRemindersModal .order-row{ display:grid; grid-template-columns: 1fr 1fr; align-items:center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border, #1e293b); }
+#orderRemindersModal .order-name{ font-weight: 700; }
+#orderRemindersModal .order-controls{ display:flex; align-items:center; gap: 10px; justify-content: flex-end; }
+#orderRemindersModal input[type="date"]{ padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border, #1e293b); background: #fff; color: #111; min-width: 170px; }
+.theme-dark #orderRemindersModal input[type="date"]{ background:#0b1220; color:#e2e8f0; border-color:#1e293b; }
+#orderRemindersModal .order-controls label{ display:none; }
+#orderRemindersModal .order-hint{ font-size: 12px; color: var(--muted, #64748b); }
 
 /* === Page Title (top-right) === */
 .page-title-bar{ display:flex; justify-content:flex-end; align-items:flex-start; margin: 2px 0 12px; }
@@ -223,6 +273,21 @@ body.logged-in #appContent { display: block; }
 #authForm input { width:250px; padding:10px; font-size:16px; }
 #authForm button { width:150px; padding:10px; font-size:16px; background:#007bff; color:#fff; border:none; border-radius:5px; cursor:pointer; }
 #authForm button:hover { background:#0056b3; }
+
+/* ===== Accessibility: Focus Visibility ===== */
+:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+
+/* ===== Loading Skeleton ===== */
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+.is-loading, .loading { position: relative; pointer-events: none; }
+.is-loading::after, .loading::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(255,255,255,0), rgba(200,200,200,.5), rgba(255,255,255,0));
+  background-size: 200% 100%;
+  animation: shimmer 1.2s linear infinite;
+  border-radius: inherit;
+}
 
 /* ===== Account Actions & Dropdown ===== */
 #accountActions {
@@ -272,10 +337,9 @@ body:not(.logged-in) #accountActions { display: none; }
   padding: 8px 23px;
   text-decoration: none;
   display: block;
-  border-style: solid;
-  border-block-style: none;
-  border-color: #22c55e;
+  border: none;
 }
+.dropdown-content a + a { border-top: 1px solid rgba(34,197,94,.35); }
 .dropdown-content a:hover { background:#105e2d; }
 .dropdown.show .dropdown-content { display: block; }
 /* Summary group headings */
@@ -744,16 +808,25 @@ body:not(.logged-in) #accountActions { display: none; }
 
 /* Place dropdown within sidebar */
 .sidebar .dropdown { position: relative; }
+/* Pop the dropdown to the right of the Account button */
 .sidebar .dropdown-content {
-  left: 0;
+  left: calc(100% + 8px);
   right: auto;
-  top: calc(100% + 6px);
+  top: 0;
 }
+/* Keep dropdown onscreen on very small widths */
+@media (max-width: 520px){
+  .sidebar .dropdown-content{ left: 0; top: calc(100% + 6px); }
+}
+
+/* Push the Account section to the bottom, above the logo */
+#accountDropdown{ margin-top: auto; margin-bottom: 240px; }
 
 #sidebar .banner-logo {
   position: absolute;
   bottom: 10%;
-  left: -4%;
+  left: 50%;                 /* center horizontally */
+  transform: translateX(-50%);
   height: auto;
   display: block;
   max-width: 80%;
@@ -999,6 +1072,12 @@ body.logged-in main { margin-left: 220px; }
 
   box-sizing: border-box;
   position: relative; /* allow top-right menu btn */
+}
+/* Leave room for the three‑dot menu so text doesn't sit underneath it */
+.supplement-box.has-menu{ padding-right: calc(var(--card-pad) + 36px); }
+.summary-container.size-compact .supplement-box.has-menu{ padding-right: calc(var(--card-pad) + 42px); }
+@media (max-width: 640px){
+  .supplement-box.has-menu{ padding-right: calc(var(--card-pad) + 44px); }
 }
 
 /* Optional: tidy action buttons inside cards */

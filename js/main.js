@@ -1,4 +1,4 @@
-import { showToast } from "./toast.js";
+import { showToast, showInfoPopover } from "./toast.js";
 import { login, signup, logout, deleteAccount, monitorAuthState, changePassword, resetPassword, resendVerification } from "./auth.js";
 import { renderCalendar } from "./calendar.js";
 import { fetchSupplements, addSupplement } from "./supplements.js";
@@ -85,7 +85,10 @@ async function openNotificationsModal() {
     }
   } catch (e) { console.error("Failed to load notif settings", e); }
 }
-function closeNotificationsModal(){ el("notificationsModal")?.classList.add("hidden"); }
+function closeNotificationsModal(){
+  el("notificationsModal")?.classList.add("hidden");
+  try { const cal = document.getElementById("calendar"); if (cal) cal.classList.remove('is-loading'); } catch {}
+}
 
 // simple debounce
 function debounce(fn, wait){ let t; return function(...args){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,args), wait); }; }
@@ -282,8 +285,17 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("downloadIcsBtn")?.addEventListener("click", (e)=>{ e.preventDefault(); downloadIcs(); });
 });
 
+// Persist calendar view (month/year)
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
+const CAL_VIEW_KEY = "calendar_view_v1";
+try {
+  const saved = JSON.parse(localStorage.getItem(CAL_VIEW_KEY) || "null");
+  if (saved && Number.isInteger(saved.m) && Number.isInteger(saved.y)) {
+    currentMonth = Math.min(11, Math.max(0, saved.m));
+    currentYear = saved.y;
+  }
+} catch {}
 let currentUser = null;
 
 // Make cycle boundaries available to notifications.js
@@ -341,6 +353,69 @@ window.getCycleBoundaries = async function(startISO, endISO) {
   // sort by date
   out.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
   return out;
+};
+
+// Provide toggled daily events for ICS export between [startISO, endISO]
+window.getToggleEventsRange = async function(startISO, endISO) {
+  try {
+    if (!currentUser) return [];
+    const start = new Date(startISO + 'T00:00:00Z');
+    const end   = new Date(endISO   + 'T00:00:00Z');
+    if (!(start instanceof Date) || !(end instanceof Date)) return [];
+    const supps = await fetchSupplements(currentUser.uid);
+    const out = [];
+    for (const s of supps) {
+      try {
+        if (!s || !s.showOnCalendar) continue;
+        const hasCycle = !!(s && s.cycle && ((Number(s.cycle.on)||0) > 0 || (Number(s.cycle.off)||0) > 0));
+        if (hasCycle) continue; // cycles already handled separately
+        const name = s.name || 'Supplement';
+        const timesArr = Array.isArray(s?.times) ? s.times
+                         : (Array.isArray(s?.time) ? s.time
+                            : (typeof s?.time === 'string' && s.time ? [s.time] : []));
+        // walk day by day
+        for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
+          const y = d.getUTCFullYear();
+          const m = String(d.getUTCMonth()+1).padStart(2,'0');
+          const dd= String(d.getUTCDate()).padStart(2,'0');
+          out.push({ date: `${y}-${m}-${dd}`, type: 'toggle', name, times: timesArr });
+        }
+      } catch {}
+    }
+    return out;
+  } catch { return []; }
+};
+
+// Provide one-time order reminder events (7 days before last dose) within [startISO, endISO]
+window.getOrderReminderEventsRange = async function(startISO, endISO) {
+  try {
+    if (!currentUser) return [];
+    const start = new Date(startISO + 'T00:00:00');
+    const end   = new Date(endISO   + 'T23:59:59');
+    const supps = await fetchSupplements(currentUser.uid);
+    const out = [];
+    for (const s of supps) {
+      try {
+        if (!s || !s.orderReminder) continue;
+        // Compute reminder date using existing helper
+        const rDate = _computeOrderReminderDate(s);
+        if (!rDate) continue;
+        if (rDate >= start && rDate <= end) {
+          // local YYYY-MM-DD (toLocalYMD may exist; fallback inline)
+          let ymd;
+          try {
+            ymd = typeof toLocalYMD === 'function' ? toLocalYMD(rDate) : (
+              rDate.getFullYear() + '-' + String(rDate.getMonth()+1).padStart(2,'0') + '-' + String(rDate.getDate()).padStart(2,'0')
+            );
+          } catch {
+            ymd = rDate.toISOString().slice(0,10);
+          }
+          out.push({ date: ymd, type: 'orderReminder', title: `Order more: ${s.name || 'Supplement'}` });
+        }
+      } catch {}
+    }
+    return out;
+  } catch { return []; }
 };
 
 // --- Delete Account: modal helpers ---
@@ -403,6 +478,7 @@ if (prevBtn) {
   prevBtn.addEventListener("click", async () => {
     currentMonth--;
     if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    try { localStorage.setItem(CAL_VIEW_KEY, JSON.stringify({ m: currentMonth, y: currentYear })); } catch {}
     await refreshCalendar();
   });
 }
@@ -410,6 +486,7 @@ if (nextBtn) {
   nextBtn.addEventListener("click", async () => {
     currentMonth++;
     if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    try { localStorage.setItem(CAL_VIEW_KEY, JSON.stringify({ m: currentMonth, y: currentYear })); } catch {}
     await refreshCalendar();
   });
 }
@@ -727,11 +804,51 @@ function _computeOrderReminderDate(supp) {
   } catch { return null; }
 }
 
+// Compute the last expected dose date (end date) for a supplement
+function _computeEndDate(supp) {
+  try {
+    if (supp && supp.orderEndDate) {
+      const m = String(supp.orderEndDate).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    }
+    const servings = Number(supp && supp.servings);
+    const startStr = (supp && supp.startDate) ? String(supp.startDate) : '';
+    const timesArr = Array.isArray(supp?.times) ? supp.times : (Array.isArray(supp?.time) ? supp.time : (typeof supp?.time === 'string' && supp.time ? [supp.time] : []));
+    function parseDailyFromDosage(txt){ try { if (!txt) return null; const t = String(txt).toLowerCase(); const regs = [/(\d+(?:\.\d+)?)\s*(?:x|A-)\s*(?:per\s*day|\/\s*day|a\s*day|daily)?/,/(\d+)\s*(?:per\s*day|\/\s*day|a\s*day|daily)/,/take\s+(\d+)/,/(\d+)\s*(?:capsules?|tablets?|pills?)\s*(?:daily|per\s*day|a\s*day)/]; for (let r of regs){ const m = t.match(r); if (m && m[1]) return Math.max(1, Math.floor(Number(m[1]))); } return null; } catch { return null; } }
+    const parsedDaily = parseDailyFromDosage(supp && supp.dosage);
+    const perDay = (Number(supp && supp.dailyDose) || 0) || parsedDaily || timesArr.length || 1;
+    if (!servings || servings <= 0 || !startStr || perDay <= 0) return null;
+    const m = startStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return null;
+    const y = +m[1], mo = +m[2]-1, d = +m[3];
+    const start = new Date(y, mo, d);
+    start.setHours(0,0,0,0);
+    const needOnDays = Math.max(1, Math.ceil(servings / perDay));
+    let last = null;
+    if (supp && supp.cycle && (Number(supp.cycle.on)||0) + (Number(supp.cycle.off)||0) > 0) {
+      const on = Math.max(0, Number(supp.cycle.on)||0);
+      const off = Math.max(0, Number(supp.cycle.off)||0);
+      const period = Math.max(1, on + off);
+      let i = 0, count = 0; const date = new Date(start); let guard = 0;
+      while (count < needOnDays && guard < 5000) {
+        if ((i % period) < on) { count++; last = new Date(date); }
+        if (count >= needOnDays) break;
+        date.setDate(date.getDate() + 1); i++; guard++;
+      }
+    } else {
+      last = new Date(start);
+      last.setDate(last.getDate() + (needOnDays - 1));
+    }
+    return last;
+  } catch { return null; }
+}
+
 async function refreshCalendar() {
   if (!currentUser || !currentUser.uid) return;
   try {
     const rawSupplements = await fetchSupplements(currentUser.uid);
     const expandedSupplements = [];
+    const seen = new Set(); // key: id|date
     const monthStart = new Date(currentYear, currentMonth, 1);
     const monthEnd = new Date(currentYear, currentMonth, 1);
     monthEnd.setDate(monthEnd.getDate() + 60); // show 60 days ahead
@@ -744,11 +861,21 @@ async function refreshCalendar() {
             date.getMonth() === currentMonth &&
             date.getFullYear() === currentYear
           ) {
-          expandedSupplements.push({
-            name: supp.name,
-            date: toLocalYMD(date),       // <— local YYYY-MM-DD
-            color: supp.color || "#cccccc"
-          });
+          const ymd = toLocalYMD(date);
+          const key = (supp.id || supp.name) + '|' + ymd;
+          if (!seen.has(key)) {
+            seen.add(key);
+            const timesArr = Array.isArray(supp?.times) ? supp.times
+                           : (Array.isArray(supp?.time) ? supp.time
+                              : (typeof supp?.time === 'string' && supp.time ? [supp.time] : []));
+            expandedSupplements.push({
+              id: supp.id,
+              name: supp.name,
+              date: ymd,
+              color: supp.color || "#cccccc",
+              times: timesArr
+            });
+          }
           }
         }
       } else if (supp.date) {
@@ -758,11 +885,21 @@ async function refreshCalendar() {
           date.getMonth() === currentMonth &&
           date.getFullYear() === currentYear
         ) {
-          expandedSupplements.push({
-            name: supp.name,
-            date: supp.date,
-            color: supp.color || "#cccccc"
-          });
+          const ymd = supp.date;
+          const key = (supp.id || supp.name) + '|' + ymd;
+          if (!seen.has(key)) {
+            seen.add(key);
+            const timesArr = Array.isArray(supp?.times) ? supp.times
+                           : (Array.isArray(supp?.time) ? supp.time
+                              : (typeof supp?.time === 'string' && supp.time ? [supp.time] : []));
+            expandedSupplements.push({
+              id: supp.id,
+              name: supp.name,
+              date: ymd,
+              color: supp.color || "#cccccc",
+              times: timesArr
+            });
+          }
         }
       }
     }
@@ -774,10 +911,47 @@ async function refreshCalendar() {
         const rDate = _computeOrderReminderDate(supp);
         if (!rDate) continue;
         if (rDate.getMonth() === currentMonth && rDate.getFullYear() === currentYear) {
+          const ymd = toLocalYMD(rDate);
+          const key = (supp.id || `order-${supp.name}`) + '|' + ymd;
+          if (!seen.has(key)) {
+            seen.add(key);
+            expandedSupplements.push({
+              id: supp.id,
+              name: `Order more: ${supp.name}`,
+              date: ymd,
+              color: '#b45309',
+              type: 'orderReminder',
+              hiddenInGrid: true
+            });
+          }
+        }
+      }
+    } catch {}
+
+    // Include user-toggled supplements for each day of the current month (show in grid and modal)
+    try {
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      for (const supp of rawSupplements) {
+        if (!supp || !supp.showOnCalendar) continue;
+        // Skip if this supplement is on a cycle; cycles already appear on the calendar
+        try {
+          const hasCycle = !!(supp && supp.cycle && ((Number(supp.cycle.on)||0) > 0 || (Number(supp.cycle.off)||0) > 0));
+          if (hasCycle) continue;
+        } catch {}
+        const timesArr = Array.isArray(supp?.times) ? supp.times
+                       : (Array.isArray(supp?.time) ? supp.time
+                          : (typeof supp?.time === 'string' && supp.time ? [supp.time] : []));
+        for (let d = 1; d <= daysInMonth; d++) {
+          const ymd = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          const key = (supp.id || supp.name) + '|' + ymd;
+          if (seen.has(key)) continue; // don't duplicate cycle or one-off
           expandedSupplements.push({
-            name: `Order more: ${supp.name}`,
-            date: toLocalYMD(rDate),
-            color: '#b45309'
+            id: supp.id,
+            name: supp.name,
+            date: ymd,
+            color: supp.color || '#cccccc',
+            times: timesArr,
+            type: 'userToggle'
           });
         }
       }
@@ -785,6 +959,7 @@ async function refreshCalendar() {
 
     const calendarEl = document.getElementById("calendar");
     const labelEl = document.getElementById("currentMonthLabel");
+    try { if (calendarEl) calendarEl.classList.remove('is-loading'); } catch {}
     renderCalendar(currentMonth, currentYear, expandedSupplements, calendarEl, labelEl);
   } catch (error) {
     console.error("❌ Failed to fetch supplements for calendar:", error);
@@ -1033,6 +1208,101 @@ form.addEventListener("submit", async (e) => {
     } catch {}
   }
 });
+
+// Order Reminders modal (robust binder)
+(function initOrderReminders(){
+  let bound = false;
+  function renderListFactory(modal, list){
+    return async function renderList(){
+      try {
+        while (list.firstChild) list.removeChild(list.firstChild);
+        if (!currentUser || !currentUser.uid) return;
+        const supps = await fetchSupplements(currentUser.uid);
+        const rows = supps.filter(s => s && s.orderReminder);
+        if (!rows.length) {
+          const p = document.createElement('p'); p.className='muted'; p.textContent = 'No order reminders enabled.'; list.appendChild(p); return;
+        }
+        rows.forEach((s) => {
+          const row = document.createElement('div'); row.className = 'order-row';
+          const name = document.createElement('div'); name.className='order-name'; name.textContent = s.name || 'Supplement';
+          const controls = document.createElement('div'); controls.className='order-controls';
+          const label = document.createElement('label'); label.textContent = 'Run-out date:'; label.style.marginRight='4px';
+          const input = document.createElement('input'); input.type='date';
+          const computedEnd = _computeEndDate(s);
+          const override = s && s.orderEndDate ? new Date(s.orderEndDate) : null;
+          const endDate = override || computedEnd;
+          if (endDate && !isNaN(endDate)) {
+            const y = endDate.getFullYear(); const m = String(endDate.getMonth()+1).padStart(2,'0'); const d = String(endDate.getDate()).padStart(2,'0');
+            input.value = `${y}-${m}-${d}`;
+          }
+          input.addEventListener('change', async ()=>{
+            try {
+              const val = input.value && input.value.match(/^\d{4}-\d{2}-\d{2}$/) ? input.value : null;
+              await updateSupplement(currentUser.uid, s.id, { orderEndDate: val });
+              if (typeof window.refreshCalendar==='function') await window.refreshCalendar();
+            } catch(e){ console.error('Failed to update run-out date', e); }
+          });
+        controls.append(label, input);
+        row.append(name, controls);
+        list.appendChild(row);
+        });
+      } catch(e) { console.error('Failed to render order reminders', e); }
+    };
+  }
+  function tryBind(){
+    if (bound) return true;
+    const btn = document.getElementById('orderRemindersBtn');
+    const modal = document.getElementById('orderRemindersModal');
+    const list = document.getElementById('orderRemindersList');
+    const closeBtn = document.getElementById('closeOrderRemindersBtn');
+    if (!btn || !modal || !list) return false;
+    const renderList = renderListFactory(modal, list);
+    const closeModal = ()=>{ modal.classList.add('hidden'); document.body.style.overflow=''; };
+    const openModal  = ()=>{ modal.classList.remove('hidden'); document.body.style.overflow='hidden'; renderList(); };
+    btn.addEventListener('click', async (e)=>{
+      e.preventDefault();
+      const anchor = e.currentTarget;
+      try {
+        if (!currentUser || !currentUser.uid) { try { showToast('Please sign in to view order reminders.', 'info', 4000); } catch {} return; }
+        const supps = await fetchSupplements(currentUser.uid);
+        const rows = (supps || []).filter(s => s && s.orderReminder);
+        if (!rows.length) {
+          try { showInfoPopover("No order reminders enabled. Turn on 'Order reminder' in a supplement to use this view.", { type: 'info', timeout: 5000, anchor, position: 'right' }); } catch {}
+          return;
+        }
+      } catch {}
+      openModal();
+    });
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e)=>{ if (e.target === modal) closeModal(); });
+    bound = true;
+    return true;
+  }
+  if (!tryBind()) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', tryBind, { once: true });
+    }
+    const mo = new MutationObserver(() => { if (tryBind()) mo.disconnect(); });
+    mo.observe(document.documentElement || document.body, { childList: true, subtree: true });
+  }
+})();
+// Expose a helper to mark a supplement as reordered (turn off reminders)
+window.markSupplementReordered = async function markSupplementReordered(id) {
+  try {
+    if (!currentUser || !currentUser.uid || !id) return;
+    await updateSupplement(currentUser.uid, id, { orderReminder: false });
+    await refreshCalendar();
+  } catch (e) { console.error('Failed to update reorder flag', e); }
+};
+
+// Service worker registration for PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    // Register relative to repo path (works on GitHub Pages project sites)
+    navigator.serviceWorker.register('sw.js', { scope: './' })
+      .catch((e) => console.warn('SW register failed', e));
+  });
+}
 
 function getModalValues() {
   const name = document.querySelector("#supp-name").value.trim();

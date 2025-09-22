@@ -26,6 +26,7 @@
   object-src 'none';
   base-uri   'self';
   form-action 'self';
+  manifest-src 'self';
   upgrade-insecure-requests;
 ">
 
@@ -34,12 +35,12 @@
 <link rel="icon" href="data:," />
 <title>Supplement Tracker</title>
 
-<link rel="stylesheet" href="style.css?v=10">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="style.css?v=11">
 <link rel="stylesheet" href="notifications.css"/>
 <link rel="stylesheet" href="barcodeStyle.css">
 
 <!-- Libraries FIRST (allowed by your CSP) -->
-<script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/index.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
 <!-- Your scanner AFTER libraries (pick the file you’re actually using) -->
@@ -48,13 +49,10 @@
 <!-- Statically include ZXing library UMD to ensure global on iOS -->
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
 <!-- Your scanner AFTER libraries (pick the file you’re actually using) -->
-<script src="./js/barcode.js?v=22"></script>
+<script src="./js/barcode.js?v=23"></script>
 <!-- or, if you’re using the iOS-focused build: -->
 <!-- <script src="./js/barcode.iosfix.js?v=8"></script> -->
-<!-- Firebase (these can remain here if you like) -->
-<script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore-compat.js"></script>
+<!-- Firebase compat removed; using modular ESM in /js/*.js -->
 
   <style>
     body:not(.logged-in) #appContent { display: none; }
@@ -161,21 +159,7 @@
     </div>
   </div>
 
-  <!-- Day Details Modal (mobile calendar expand) -->
-  <div id="dayModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="dayModalTitle">
-    <div class="modal-backdrop" data-close-modal></div>
-    <div class="modal-content" role="document">
-      <div class="modal-header">
-        <div class="modal-title-wrap">
-          <h2 id="dayModalTitle" class="modal-title">Day</h2>
-        </div>
-        <button id="closeDayBtn" class="icon-btn close-btn" aria-label="Close day details">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div id="dayModalList" class="day-modal-list"></div>
-      </div>
-    </div>
-  </div>
+  
 
   <!-- App Shell: sidebar + main -->
   <div class="app-shell">
@@ -184,20 +168,20 @@
       <button class="sidebar-tab" id="sidebarTab" aria-label="Toggle sidebar" aria-expanded="true">
       <span class="sidebar-tab-icon">❮</span>
       </button>
-      <button id="logoutBtn" class="sidebar-btn">Logout</button>
+      <button id="addSupplementBtn" class="sidebar-btn">Add New Supplement</button>
+      <button id="notesBtn" class="sidebar-btn">Notes</button>
+      <button id="orderRemindersBtn" class="sidebar-btn">Order Reminders</button>
+      <button id="openNotifications" class="sidebar-btn">Download Calendar</button>
 
-      <!-- Account Options dropdown -->
-      <div class="dropdown">
-        <button id="profileButton" class="profile-button">Account Options</button>
+      <!-- Account dropdown (moved near bottom) -->
+      <div class="dropdown" id="accountDropdown">
+        <button id="profileButton" class="profile-button">Account</button>
         <div id="profileDropdown" class="dropdown-content">
           <a href="#" id="resetPassword">Reset Password</a>
+          <a href="#" id="logoutBtn">Logout</a>
           <a href="#" id="deleteAccount">Delete Account</a>
-          <a href="#" id="openNotifications">Download Calendar</a>
         </div>
       </div>
-
-      <button id="notesBtn" class="sidebar-btn">Notes</button>
-      <button id="addSupplementBtn" class="sidebar-btn">Add New Supplement</button>
 
       
 
@@ -355,9 +339,36 @@
               Tip: create a <em>separate</em> calendar (e.g., “Supplements / Cycles”) before importing this file.
               That way you can toggle it on/off or delete it without touching your main calendar.
             </p>
-            <button id="notificationsIcsBtn">Download</button>
+            <div id="icsMonthsGroup" role="radiogroup" aria-label="Export range">
+              <label class="ics-radio"><input type="radio" name="icsMonths" value="3"> <span>3 months</span></label>
+              <label class="ics-radio"><input type="radio" name="icsMonths" value="6"> <span>6 months</span></label>
+              <label class="ics-radio"><input type="radio" name="icsMonths" value="12" checked> <span>12 months</span></label>
+            </div>
+            <div id="icsRange" class="muted small" aria-live="polite"></div>
+            <div id="icsWarn" class="muted small" aria-live="polite"></div>
+            <button id="notificationsIcsBtn" class="btn-primary">Download</button>
           </div>
           <div class="noty-actions"></div>
+        </div>
+      </div>
+
+      <!-- Order Reminders Modal -->
+      <div id="orderRemindersModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="orderRemindersTitle">
+        <div class="modal-content" role="document">
+          <div class="modal-header">
+            <div class="modal-title-wrap">
+              <h2 id="orderRemindersTitle" class="modal-title">Order Reminders</h2>
+            </div>
+            <button id="closeOrderRemindersBtn" class="icon-btn close-btn" aria-label="Close order reminders">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="order-head">
+              <div class="order-name-h">Supplement</div>
+              <div class="order-date-h">Adjust expected run-out dates</div>
+            </div>
+            <div id="orderRemindersList" class="order-list"></div>
+            <div class="order-hint" style="margin-top:10px;">Reminder appears 7 days before run-out date.</div>
+          </div>
         </div>
       </div>
 
@@ -487,7 +498,7 @@
         help.setAttribute('aria-expanded','true');
         // Show simple info popover (closes on outside click or X)
         showInfoPopover(
-          'The Cycle Calendar shows days you are ON for supplements with a cycle. Add a Start Date and On/Off days in the form to see colored entries. You can tap a day to view details.',
+          'The Cycle Calendar shows the days your supplements are ON or OFF a cycle. To add a cycled supplement, check the "On a cycle?" box and fill in the details. Also, you can choose to add a supplement to the calendar with the toggle in the summary card. Tap a day to view details.',
           { type: 'info', anchor: help, timeout: 0 }
         );
         // Reset aria-expanded when the popover closes

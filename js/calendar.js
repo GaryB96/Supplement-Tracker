@@ -64,6 +64,7 @@ if (_isToday) {
   // Get all supplements for this day
   const supplementsForDay = supplements.filter(s => s.date === dateString);
   supplementsForDay.forEach(supplement => {
+    if (supplement && supplement.hiddenInGrid) return; // skip grid clutter
     const supplementEl = document.createElement("div");
     supplementEl.className = "supplement";
     supplementEl.textContent = supplement.name;
@@ -98,19 +99,87 @@ if (_isToday) {
       const dt = new Date(year, month, day);
       const opts = { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' };
       title.textContent = dt.toLocaleDateString(undefined, opts);
+      // Track selected day for cross-module use
+      const ymd = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      try { window.__selectedDayYMD = ymd; } catch {}
+      // Group by time of day for the modal view
+      const groups = { Morning: [], Afternoon: [], Evening: [] };
+      supplementsForDay.forEach(s => {
+        const times = Array.isArray(s?.times) ? s.times
+                    : (Array.isArray(s?.time) ? s.time
+                       : (typeof s?.time === 'string' && s.time ? [s.time] : []));
+        let placed = false;
+        ['Morning','Afternoon','Evening'].forEach(slot => {
+          if (times.includes(slot)) { groups[slot].push(s); placed = true; }
+        });
+        if (!placed) { groups.Morning.push(s); } // default bucket
+      });
+
+      const renderGroup = (label, items) => {
+        if (!items || !items.length) return;
+        const h = document.createElement('div');
+        h.className = 'day-section-title';
+        h.textContent = label;
+        list.appendChild(h);
+        items.forEach(s => {
+          const item = document.createElement('div');
+          item.className = 'supplement';
+          item.textContent = s.name;
+          // Choose a more contrasting style for user-toggled entries
+          try {
+            let bg = s && s.color ? s.color : null;
+            if (s && s.type === 'userToggle') {
+              if (!bg || bg.toLowerCase() === '#cccccc') bg = '#2563eb';
+            }
+            if (!bg) {
+              if (typeof window !== 'undefined' && typeof window.pickColor === 'function') {
+                bg = window.pickColor(s && s.name);
+              } else {
+                bg = '#2563eb';
+              }
+            }
+            item.style.backgroundColor = bg;
+            // Compute readable text color (YIQ)
+            const hex = String(bg).replace('#','');
+            const r = parseInt(hex.substring(0,2),16);
+            const g = parseInt(hex.substring(2,4),16);
+            const b = parseInt(hex.substring(4,6),16);
+            const yiq = ((r*299)+(g*587)+(b*114))/1000;
+            item.style.color = yiq >= 150 ? '#111827' : '#fff';
+          } catch(_) { item.style.color = '#fff'; }
+          // Reorder CTA for reminder items
+          if (s && s.type === 'orderReminder' && s.id) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = 'Mark reordered';
+            btn.style.marginLeft = '8px';
+            btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              try { window.markSupplementReordered && window.markSupplementReordered(s.id); } catch {}
+            });
+            const wrap = document.createElement('div');
+            wrap.style.display = 'flex';
+            wrap.style.alignItems = 'center';
+            wrap.style.gap = '6px';
+            wrap.appendChild(item);
+            wrap.appendChild(btn);
+            list.appendChild(wrap);
+          } else {
+            list.appendChild(item);
+          }
+        });
+      };
+
       if (supplementsForDay.length === 0) {
         const empty = document.createElement('div');
         empty.textContent = 'No supplements scheduled.';
         list.appendChild(empty);
       } else {
-        supplementsForDay.forEach(s => {
-          const item = document.createElement('div');
-          item.className = 'supplement';
-          item.textContent = s.name;
-          if (s.color) { item.style.backgroundColor = s.color; item.style.color = '#fff'; }
-          list.appendChild(item);
-        });
+        renderGroup('Morning', groups.Morning);
+        renderGroup('Afternoon', groups.Afternoon);
+        renderGroup('Evening', groups.Evening);
       }
+      // (Removed) Add-to-day header button
       modal.classList.remove('hidden');
       document.body.style.overflow = 'hidden';
     } catch (e) { /* noop */ }
