@@ -8,6 +8,26 @@ import { updateSupplement } from "./supplements.js";
 
 document.documentElement.classList.add("auth-pending");
 
+let deferredInstallPrompt = null;
+
+function toggleAddToHomeLink(show) {
+  const link = document.getElementById("addToHomeLink");
+  if (!link) return;
+  link.classList.toggle("hidden", !show);
+}
+
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  toggleAddToHomeLink(true);
+});
+
+window.addEventListener("appinstalled", () => {
+  deferredInstallPrompt = null;
+  toggleAddToHomeLink(false);
+  try { showInlineStatus("App installed on your device.", "success"); } catch {}
+});
+
 // Deterministic palette-based color picker shared by summary + calendar
 if (!window.pickColor) {
   window.pickColor = function pickColor(seed) {
@@ -58,6 +78,47 @@ function showInlineStatus(message, type = "info") {
       el.classList.remove("error", "success", "warn", "info");
     }, 8000);
   }
+}
+
+function ensurePasswordToggle(toggleId, inputIds) {
+  const inputs = (inputIds || [])
+    .map((id) => document.getElementById(id))
+    .filter(Boolean);
+  if (!inputs.length) return null;
+
+  let toggle = document.getElementById(toggleId);
+  if (!toggle) {
+    const anchor = document.getElementById(inputIds[inputIds.length - 1]);
+    if (!anchor) return null;
+    const wrap = document.createElement("div");
+    wrap.className = "password-toggle";
+
+    toggle = document.createElement("input");
+    toggle.type = "checkbox";
+    toggle.id = toggleId;
+
+    const label = document.createElement("label");
+    label.setAttribute("for", toggleId);
+    label.textContent = "Show password";
+
+    wrap.append(toggle, label);
+    anchor.insertAdjacentElement("afterend", wrap);
+  }
+
+  const sync = () => {
+    const type = toggle.checked ? "text" : "password";
+    inputs.forEach((input) => {
+      input.type = type;
+    });
+  };
+
+  if (!toggle.dataset.bound) {
+    toggle.addEventListener("change", sync);
+    toggle.dataset.bound = "1";
+  }
+
+  sync();
+  return toggle;
 }
 
 // ==== Notifications UI & ICS Export ====
@@ -614,6 +675,8 @@ if (user) {
   const signinPass = document.getElementById("signinPassword");
   const forgotLink = document.getElementById("forgotPasswordLink");
 
+  ensurePasswordToggle("signinShowPassword", ["signinPassword"]);
+
   if (forgotLink) {
     forgotLink.addEventListener("click", async (e) => {
       e.preventDefault();
@@ -654,6 +717,33 @@ if (user) {
   const signupPass = document.getElementById("signupPassword");
   const signupPass2 = document.getElementById("signupPassword2");
   const resendBtn = document.getElementById("resendVerificationBtn");
+  const addToHomeLink = document.getElementById("addToHomeLink");
+
+  ensurePasswordToggle("signupShowPassword", ["signupPassword", "signupPassword2"]);
+
+  if (addToHomeLink) {
+    addToHomeLink.addEventListener("click", async (e) => {
+      e.preventDefault();
+      if (!deferredInstallPrompt) {
+        showInlineStatus("Add to Home Screen isn't available right now. Try your browser menu instead.", "info");
+        return;
+      }
+      deferredInstallPrompt.prompt();
+      try {
+        const choice = await deferredInstallPrompt.userChoice;
+        if (choice && choice.outcome === "accepted") {
+          showInlineStatus("Add to Home Screen starting...", "success");
+        } else {
+          showInlineStatus("Add to Home Screen dismissed.", "warn");
+        }
+      } catch (err) {
+        console.warn("PWA install prompt failed", err);
+        showInlineStatus("Could not launch the install prompt.", "error");
+      }
+      deferredInstallPrompt = null;
+      toggleAddToHomeLink(false);
+    });
+  }
 
   if (signupForm) {
     signupForm.addEventListener("submit", async (e) => {
@@ -1297,10 +1387,55 @@ window.markSupplementReordered = async function markSupplementReordered(id) {
 
 // Service worker registration for PWA
 if ('serviceWorker' in navigator) {
+  const SW_STORAGE_KEY = 'sw-version';
+
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    const { type, version } = event.data || {};
+    if (type === 'SW_ACTIVATED' && version) {
+      const current = localStorage.getItem(SW_STORAGE_KEY);
+      if (current !== version) {
+        localStorage.setItem(SW_STORAGE_KEY, version);
+        window.location.reload();
+      }
+    }
+  });
+
   window.addEventListener('load', () => {
-    // Register relative to repo path (works on GitHub Pages project sites)
     navigator.serviceWorker.register('sw.js', { scope: './' })
+      .then((registration) => {
+        const applyUpdate = (worker) => {
+          if (!worker) return;
+          worker.postMessage({ type: 'SKIP_WAITING' });
+        };
+
+        if (registration.waiting) {
+          applyUpdate(registration.waiting);
+        }
+
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          if (!newWorker) return;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              applyUpdate(newWorker);
+            }
+          });
+        });
+
+        navigator.serviceWorker.ready.then((readyReg) => {
+          setInterval(() => readyReg.update().catch(() => {}), 60 * 60 * 1000);
+        });
+      })
       .catch((e) => console.warn('SW register failed', e));
+  });
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    // Ensure we reload exactly once when a new SW takes control
+    if (!navigator.serviceWorker.controller) return;
+    const hasReloaded = window.sessionStorage.getItem('sw-controller-reloaded');
+    if (hasReloaded) return;
+    window.sessionStorage.setItem('sw-controller-reloaded', '1');
+    window.location.reload();
   });
 }
 

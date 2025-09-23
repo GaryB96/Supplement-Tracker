@@ -76,6 +76,7 @@ async function makeBarcodeDetector() {
       var sp = document.getElementById('scanSpinner');
       if (!sp) return;
       sp.classList.remove('hidden');
+      sp.style.display = 'flex';
       var t = sp.querySelector('.scan-spinner-text');
       if (t && text) t.textContent = text;
     }catch(_){}
@@ -85,6 +86,7 @@ async function makeBarcodeDetector() {
       var sp = document.getElementById('scanSpinner');
       if (!sp) return;
       sp.classList.add('hidden');
+      sp.style.display = 'none';
     }catch(_){}
   }
 
@@ -246,6 +248,16 @@ async function makeBarcodeDetector() {
       console.warn('[barcode] fillSupplementFromBarcode error:', e);
     }
   }
+
+  async function fillSupplementFromBarcodeWithSpinner(code, fileForOCR, label) {
+    var message = label || 'Looking up product...';
+    showScanSpinner(message);
+    try {
+      await fillSupplementFromBarcode(code, fileForOCR);
+    } finally {
+      hideScanSpinner();
+    }
+  }
 // ---------- Optional OCR (free) ----------
   function matchBest(text, regs) {
     for (var i = 0; i < regs.length; i++) {
@@ -395,7 +407,7 @@ async function makeBarcodeDetector() {
                 var code = String(results[0].rawValue || '').trim();
                 __live.running = false;
                 stopLiveScan();
-                await fillSupplementFromBarcode(code, null);
+                await fillSupplementFromBarcodeWithSpinner(code, null);
                 return;
               }
             } catch(_){}
@@ -418,7 +430,7 @@ async function makeBarcodeDetector() {
             if (res && (res.text || (res.getText && res.getText()))) {
               var code = String(res.text || (res.getText && res.getText()) || '').trim();
               __live.running = false; stopLiveScan();
-              await fillSupplementFromBarcode(code, null);
+              await fillSupplementFromBarcodeWithSpinner(code, null);
             }
           });
           if (stopBtn) stopBtn.onclick = function(){ stopLiveScan(); };
@@ -445,7 +457,7 @@ async function makeBarcodeDetector() {
               var t = res && (res.text || (res.getText && res.getText()));
               if (t && String(t).trim()) {
                 __live.running = false; stopLiveScan();
-                await fillSupplementFromBarcode(String(t).trim(), null);
+                await fillSupplementFromBarcodeWithSpinner(String(t).trim(), null);
                 return;
               }
             } catch(_){}
@@ -799,7 +811,7 @@ function anyFilled(curr) {
 
   // Replace legacy barcode modal path with direct supplement autofill
   async function openModalWithAutoFill(code, fileForOCR) {
-    return fillSupplementFromBarcode(code, fileForOCR);
+    return fillSupplementFromBarcodeWithSpinner(code, fileForOCR);
   }
 
   // Ensure scanner button works even if modal content is re-rendered or on Android DOM quirks
@@ -896,8 +908,7 @@ function anyFilled(curr) {
             } catch (_) {}
           }
           if (code) {
-            showScanSpinner('Looking up product…');
-            await fillSupplementFromBarcode(code, file);
+            await fillSupplementFromBarcodeWithSpinner(code, file);
           } else {
             alert('No barcode detected. Try a closer, well-lit shot filling the frame.');
           }
