@@ -26,7 +26,7 @@ form { margin-bottom: 20px; }
 form input, form select {
   display: block;
   width: 100%;
-  max-width: 400px;
+  max-width: 350px;
   margin: 10px auto;
   padding: 10px;
   font-size: 16px;
@@ -39,7 +39,7 @@ form input:focus, form select:focus { border-color: #4caf50; outline: none; }
 
 form button[type="submit"] {
   display: block;
-  margin: 20px auto;
+  margin: 0px auto;
   padding: 10px 20px;
   font-size: 16px;
   background: linear-gradient(90deg, #4caf50, #81c784);
@@ -707,29 +707,21 @@ body:not(.logged-in) #accountActions { display: none; }
 @media (min-width: 1024px){
   #supplementModal{
     align-items: center;
-    padding-top: 4vh;
-    padding-bottom: 4vh;
+    padding: 4vh 0;
     overflow-y: visible;
   }
   #supplementModal .modal-content{
-    max-width: 820px; /* wider on desktop */
-    width: clamp(640px, 68vw, 820px);
+    max-width: 500px;
+    width: min(90vw, 500px);
     max-height: none; /* avoid inner scroll on tall screens */
     margin: 0 auto;
+    overflow-x: hidden;
   }
   #supplementModalForm{
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: 24px;
-    row-gap: 16px;
-  }
-  #supplementModalForm .form-row{
-    margin: 0;
-  }
-  #supplementModalForm .form-row:has(.time-grid),
-  #supplementModalForm .form-row-inline,
-  #supplementModalForm .modal-actions{
-    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    row-gap: 3px;
   }
 }
 .status-pill.info{color:#374151}
@@ -968,6 +960,7 @@ body:not(.logged-in) #accountActions { display: none; }
 #supplementModal select { margin-left: 3px; margin-top: 0px; }                    /* “couple px” feel */
 #supplementModal .modal-content > #supplementModalTitle {
   margin-left: 10px;
+  margin-top: -10px;
 }
 #supplementModal .modal-content > #supplementModalDesc {
   margin-left: 10px;
